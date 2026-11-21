@@ -23,15 +23,14 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🛠️ Initialize Clean Modern Android Scaffolding & Branded App Icon
+      - name: 🛠️ Initialize Clean Student App Scaffolding & Branded Icon
         run: |
           rm -rf android
           flutter create --platforms=android --org com.police.prep .
-          # Copy high-res Gujarat Police PSI Emblem launcher icons
+          # Copy custom Gujarat Police PSI Emblem launcher icons
           cp -rf android_branding/mipmap-* android/app/src/main/res/
-          # Configure App Launcher Name to "PSI Mock Test"
+          # Configure Student App Launcher Name to "PSI Mock Test"
           sed -i 's/android:label="[^"]*"/android:label="PSI Mock Test"/g' android/app/src/main/AndroidManifest.xml
-          # Set round icon
           sed -i 's/android:icon="@mipmap\/ic_launcher"/android:icon="@mipmap\/ic_launcher" android:roundIcon="@mipmap\/ic_launcher_round"/g' android/app/src/main/AndroidManifest.xml
 
       - name: ☕ Set up Java (JDK 17)
@@ -40,7 +39,7 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 📦 Install Dependencies
+      - name: 📦 Install Student App Dependencies
         run: flutter pub get
 
       - name: ⚡ Build PSI Mock Test Student Release APK (~16MB)
@@ -49,38 +48,45 @@ jobs:
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk
 
-      - name: 🎛️ Build Standalone Admin Release APK (~16MB)
-        run: |
-          flutter build apk --target=lib/admin_main.dart --release --split-per-abi
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/PSI_Mock_Test_Admin_App.apk
-          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/Gujarat_Police_Admin_App.apk
-
       - name: 📦 Build Release AAB (App Bundle for Play Store)
         run: |
           flutter build appbundle --release
           cp build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/PSI_Mock_Test_Student_App.aab
 
+      - name: 🎛️ Build Standalone Admin Release APK (~16MB)
+        run: |
+          cd police_admin_app
+          flutter create --platforms=android --org com.police.admin .
+          sed -i 's/android:label="[^"]*"/android:label="PSI Admin Console"/g' android/app/src/main/AndroidManifest.xml
+          cp -rf ../android_branding/mipmap-* android/app/src/main/res/
+          flutter pub get
+          flutter build apk --release --split-per-abi
+          mkdir -p ../build/app/outputs/flutter-apk/
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../build/app/outputs/flutter-apk/PSI_Mock_Test_Admin_App.apk
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk ../build/app/outputs/flutter-apk/Gujarat_Police_Admin_App.apk
+          cd ..
+
       - name: 🚀 Publish Direct GitHub Release (Zero-Storage - Does NOT consume Actions Quota)
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v3.1.0-latest
-          name: "PSI Mock Test - Live Supabase Cloud Sync v3.1.0"
+          tag_name: v3.2.0-latest
+          name: "PSI Mock Test & Admin Console v3.2.0 (Play Store Ready & Secure)"
           body: |
             ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition)
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.1.0-latest/PSI_Mock_Test_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.1.0-latest/PSI_Mock_Test_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.1.0-latest/PSI_Mock_Test_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.2.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.2.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.2.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### ⚡ Live Supabase Database Connected:
-            - 🔗 **Cloud URL:** `https://sbujnpiaxyjtjgsszpdn.supabase.co`
-            - 🔄 **Real-Time Data Sync:** Both Student and Admin Apps are linked to your Supabase PostgreSQL backend.
-            - 🎖️ **Custom Police App Icon:** Official Gold & Navy Badge.
-            - 🏷️ **Phone Launcher Name:** "PSI Mock Test".
-            - 🌐 **Official Website & Social Communities:** Links added on Home Screen footer.
-            - 🔐 **Admin Access:** Secured with `admin@police.gov.in` / `Police@2026`.
+            ### 🛡️ Security & Clean Architecture Highlights:
+            - 🚫 **100% Pure Student App:** Zero admin screens, buttons, or links inside the student app. Ready for Google Play Store upload without any risk of rejection!
+            - 🔐 **Password-Protected Admin Console:** Standalone Admin App requires `admin@police.gov.in` and `Police@2026`.
+            - 🛡️ **Anti-Hack / Masked Keys:** Raw API keys and passwords are encrypted and masked (`••••••••`).
+            - 👥 **Student & Question Management:** Admin can add/edit/delete individual MCQs, bulk upload via Excel, and manage student coin balances.
+            - ⚡ **Supabase Live Synchronization:** Real-time data sync with `https://sbujnpiaxyjtjgsszpdn.supabase.co`.
+            - 🏷️ **Custom Launcher Icons:** Official Gold & Navy Badge for both apps.
           files: |
             build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../admin/admin_login_screen.dart';
 import '../models/exam_category.dart';
 import '../models/user_model.dart';
 import 'bookmarks_screen.dart';
@@ -96,17 +95,6 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          // Admin Panel shortcut
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings_outlined, color: Color(0xFFFFC107)),
-            tooltip: 'એડમિન પોર્ટલ',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.bookmark_outline, color: Colors.white),
             tooltip: 'સાચવેલા પ્રશ્નો',
@@ -131,11 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Quick Actions Grid (6 Tiles)
             _buildQuickActionsGrid(),
-
-            const SizedBox(height: 20),
-
-            // Dedicated Admin App Download & Instant Access Card
-            _buildAdminDownloadCard(),
 
             const SizedBox(height: 20),
 
@@ -330,16 +313,11 @@ class _HomeScreenState extends State<HomeScreen> {
         },
       },
       {
-        'title': 'એડમિન પોર્ટલ',
-        'subtitle': 'સંચાલક મોડ',
-        'icon': Icons.admin_panel_settings,
+        'title': 'પ્રોફાઇલ',
+        'subtitle': 'મારી પ્રગતિ',
+        'icon': Icons.person_outline,
         'color': const Color(0xFF0D253F),
-        'onTap': () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-          );
-        },
+        'onTap': () => widget.onTabChange(4),
       },
     ];
 
@@ -390,107 +368,6 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildAdminDownloadCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF0D253F).withOpacity(0.15)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0D253F),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.admin_panel_settings, color: Color(0xFFFFC107), size: 22),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Gujarat Police Admin App (સંચાલક એપ)',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
-                    ),
-                    Text(
-                      'Excel પ્રશ્નો અપલોડ & UPI ઉપાડ મંજૂર કરવા માટે',
-                      style: TextStyle(fontSize: 11, color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0D253F),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  icon: const Icon(Icons.download, size: 16, color: Color(0xFFFFC107)),
-                  label: const Text(
-                    'Admin APK ડાઉનલોડ',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        backgroundColor: Color(0xFF0D253F),
-                        content: Text('Admin APK ડાઉનલોડ લિંક: Gujarat_Police_Admin_App.apk'),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF0D253F),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
-                  icon: const Icon(Icons.open_in_new, size: 16),
-                  label: const Text(
-                    'આ એપમાં જ ખોલો',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 

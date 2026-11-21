@@ -11,8 +11,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'student@khakhi.in');
-  final _passwordController = TextEditingController(text: 'student123');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   String _errorMessage = '';
 
@@ -21,11 +21,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (email.isEmpty || !email.contains('@')) {
-      setState(() => _errorMessage = 'કૃપા કરીને માન્ય ઈમેલ લખો.');
+      setState(() => _errorMessage = 'કૃપા કરીને સાચું ઈમેલ એડ્રેસ લખો.');
       return;
     }
-    if (password.isEmpty) {
-      setState(() => _errorMessage = 'કૃપા કરીને પાસવર્ડ લખો.');
+    if (password.isEmpty || password.length < 6) {
+      setState(() => _errorMessage = 'કૃપા કરીને માન્ય પાસવર્ડ (ઓછામાં ઓછા 6 અક્ષર) લખો.');
       return;
     }
 

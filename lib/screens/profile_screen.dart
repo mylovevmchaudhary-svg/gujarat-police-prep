@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../admin/admin_login_screen.dart';
 import '../models/user_model.dart';
 import 'bookmarks_screen.dart';
 import 'login_screen.dart';
@@ -165,38 +164,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 10),
-
-                  // Dedicated Admin Management Section
-                  _buildMenuCard(
-                    icon: Icons.admin_panel_settings,
-                    color: const Color(0xFF0D253F),
-                    title: '🎛️ માસ્ટર એડમિન પોર્ટલ (Admin Portal)',
-                    subtitle: 'MCQs અપલોડ, ટેસ્ટ ફ્રી/લોક, UPI પેમેન્ટ મંજૂર કરો',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-
-                  _buildMenuCard(
-                    icon: Icons.download_for_offline,
-                    color: const Color(0xFF2E7D32),
-                    title: '⬇️ Download Admin App APK',
-                    subtitle: 'Gujarat_Police_Admin_App.apk સીધું ડાઉનલોડ કરો',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          backgroundColor: Color(0xFF0D253F),
-                          content: Text('Admin APK ફાઇલ: Gujarat_Police_Admin_App.apk'),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-
                   _buildSwitchCard(
                     icon: Icons.notifications_active_outlined,
                     color: const Color(0xFF2E7D32),
