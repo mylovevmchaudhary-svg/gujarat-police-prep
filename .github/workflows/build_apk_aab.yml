@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Gujarat Police Student & Admin Apps
+    name: Build PSI Mock Test Student & Admin Apps
     runs-on: ubuntu-latest
 
     steps:
@@ -23,10 +23,16 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🛠️ Initialize Clean Modern Android v2 Scaffolding
+      - name: 🛠️ Initialize Clean Modern Android Scaffolding & Branded App Icon
         run: |
           rm -rf android
-          flutter create --platforms=android .
+          flutter create --platforms=android --org com.police.prep .
+          # Copy high-res Gujarat Police PSI Emblem launcher icons
+          cp -rf android_branding/mipmap-* android/app/src/main/res/
+          # Configure App Launcher Name to "PSI Mock Test"
+          sed -i 's/android:label="[^"]*"/android:label="PSI Mock Test"/g' android/app/src/main/AndroidManifest.xml
+          # Set round icon
+          sed -i 's/android:icon="@mipmap\/ic_launcher"/android:icon="@mipmap\/ic_launcher" android:roundIcon="@mipmap\/ic_launcher_round"/g' android/app/src/main/AndroidManifest.xml
 
       - name: ☕ Set up Java (JDK 17)
         uses: actions/setup-java@v4
@@ -37,41 +43,47 @@ jobs:
       - name: 📦 Install Dependencies
         run: flutter pub get
 
-      - name: ⚡ Build Student Release APK (~16MB)
+      - name: ⚡ Build PSI Mock Test Student Release APK (~16MB)
         run: |
           flutter build apk --release --split-per-abi
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk
 
       - name: 🎛️ Build Standalone Admin Release APK (~16MB)
         run: |
           flutter build apk --target=lib/admin_main.dart --release --split-per-abi
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/PSI_Mock_Test_Admin_App.apk
           cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/Gujarat_Police_Admin_App.apk
 
       - name: 📦 Build Release AAB (App Bundle for Play Store)
         run: |
           flutter build appbundle --release
-          cp build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/Gujarat_Police_Student_App.aab
+          cp build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/PSI_Mock_Test_Student_App.aab
 
       - name: 🚀 Publish Direct GitHub Release (Zero-Storage - Does NOT consume Actions Quota)
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v2.9.0-latest
-          name: "Gujarat Police Student & Admin Apps v2.9.0"
+          tag_name: v3.0.0-latest
+          name: "PSI Mock Test - Student & Admin Apps v3.0.0"
           body: |
-            ## 👮‍♂️ Gujarat Police (Constable & PSI) Prep Apps v2.9.0
+            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition)
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [Gujarat_Police_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v2.9.0-latest/Gujarat_Police_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [Gujarat_Police_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v2.9.0-latest/Gujarat_Police_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [Gujarat_Police_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v2.9.0-latest/Gujarat_Police_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.0.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.0.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.0.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### ✨ What's New in v2.9.0:
-            - 🚀 **Splash -> Login Flow:** Splash Screen with Police logo strictly leads to Login/Sign-up first.
-            - 🔐 **Secure Admin Login:** Admin App is strictly gated with Admin Email & Password (`admin@police.gov.in` / `Police@2026`).
-            - 📚 **Syllabus with MCQ Counts:** Every topic now displays exact MCQ counts (4,000+ total MCQs).
-            - ⚡ **Supabase Live Synchronization:** Unified database state between Student and Admin App.
+            ### ✨ Highlights of this Release:
+            - 🎖️ **Custom Police App Icon:** Replaced default Flutter logo with Gujarat Police Navy Blue & Gold Emblem.
+            - 🏷️ **Official App Name:** Displays as **"PSI Mock Test"** on phone launcher screen.
+            - 🌐 **Website & Social Media:** Direct links to official portal, WhatsApp community, Telegram channel, YouTube lectures & Instagram.
+            - 🚀 **Splash ➔ Login Flow:** Animated splash screen directly leads to Email/Password login & Sign-up.
+            - 🔐 **Password Protected Admin:** Admin panel requires `admin@police.gov.in` and `Police@2026`.
+            - 📊 **Syllabus with MCQ Counts:** Detailed 4,000+ MCQ breakdown with topic-level counts and practice buttons.
           files: |
+            build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk
+            build/app/outputs/flutter-apk/PSI_Mock_Test_Admin_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Admin_App.apk
-            build/app/outputs/bundle/release/Gujarat_Police_Student_App.aab
+            build/app/outputs/bundle/release/PSI_Mock_Test_Student_App.aab

@@ -166,6 +166,17 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Daily Tip Box
             _buildDailyTipCard(),
+
+            const SizedBox(height: 22),
+
+            // Website & Social Media Communities Section
+            _buildWebsiteAndSocialLinksSection(),
+
+            const SizedBox(height: 20),
+
+            // App Footer & Copyright
+            _buildFooterCopyright(),
+            const SizedBox(height: 10),
           ],
         ),
       ),
@@ -622,6 +633,339 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLinkDialog({
+    required String title,
+    required String url,
+    required String description,
+    required IconData icon,
+    required Color color,
+  }) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: color.withOpacity(0.12),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(description, style: const TextStyle(fontSize: 13, color: Colors.black87)),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F4F8),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.withOpacity(0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.link, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      url,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('બંધ કરો'),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0D253F),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            icon: const Icon(Icons.copy, size: 16, color: Color(0xFFFFC107)),
+            label: const Text('લિંક કોપી કરો'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: const Color(0xFF0D253F),
+                  content: Text('$title ની લિંક કોપી થઈ ગઈ: $url 📋'),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWebsiteAndSocialLinksSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Section Header
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: const [
+            Text(
+              '🌐 વેબસાઇટ & સોશિયલ મીડિયા',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0D253F),
+              ),
+            ),
+            Text(
+              'સત્તાવાર લિંક્સ',
+              style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'મહત્વના પરિપત્રો, ડેઇલી મોક ટેસ્ટ સોલ્યુશન અને મટીરીયલ માટે જોડાઓ:',
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+        ),
+        const SizedBox(height: 12),
+
+        // Main Official Website Banner Card
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF0D253F), Color(0xFF1E3C72)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0D253F).withOpacity(0.2),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.language, color: Color(0xFFFFC107), size: 28),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      'અધિકૃત વેબસાઇટ પોર્ટલ 🌐',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'www.gujaratpoliceprep.in',
+                      style: TextStyle(fontSize: 12, color: Color(0xFFFFC107), fontWeight: FontWeight.w600),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'ભરતી નિયમો, પરિણામો અને મોક ટેસ્ટ માહિતી',
+                      style: TextStyle(fontSize: 11, color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFC107),
+                  foregroundColor: const Color(0xFF0D253F),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                onPressed: () {
+                  _showLinkDialog(
+                    title: 'અધિકૃત વેબસાઇટ',
+                    url: 'https://gujaratpoliceprep.in',
+                    description: 'ગુજરાત પોલીસ કોન્સ્ટેબલ (LRD) અને PSI ભરતીનું સત્તાવાર પોર્ટલ.',
+                    icon: Icons.language,
+                    color: const Color(0xFF0D253F),
+                  );
+                },
+                child: const Text('મુલાકાત લો ↗', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+
+        // 4 Social Media Communities Grid
+        Row(
+          children: [
+            // WhatsApp Community
+            Expanded(
+              child: _buildSocialCard(
+                title: 'WhatsApp',
+                subtitle: 'સ્ટડી ગ્રુપ',
+                icon: Icons.chat_bubble_outline,
+                color: const Color(0xFF25D366),
+                url: 'https://chat.whatsapp.com/KhakhiPrep2026',
+                description: 'રોજિંદા મહત્વપૂર્ણ પ્રશ્નો અને પરીક્ષા ચર્ચા માટે WhatsApp ગ્રુપમાં જોડાઓ.',
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Telegram Channel
+            Expanded(
+              child: _buildSocialCard(
+                title: 'Telegram',
+                subtitle: 'ફ્રી PDF & GK',
+                icon: Icons.send_rounded,
+                color: const Color(0xFF0088CC),
+                url: 'https://t.me/GujaratPolicePrep',
+                description: 'સંપૂર્ણ મોક ટેસ્ટ પેપર PDF અને કરંટ અફેર્સ માટે ટેલિગ્રામ ચેનલ સબ્સ્ક્રાઇબ કરો.',
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            // YouTube Channel
+            Expanded(
+              child: _buildSocialCard(
+                title: 'YouTube',
+                subtitle: 'વિડિયો લેક્ચર્સ',
+                icon: Icons.play_circle_filled,
+                color: const Color(0xFFFF0000),
+                url: 'https://youtube.com/@GujaratPolicePrep',
+                description: 'કાયદો, બંધારણ અને ગણિત-રીઝનિંગની શોર્ટ ટ્રીક્સના વિડીયો જુઓ.',
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Instagram
+            Expanded(
+              child: _buildSocialCard(
+                title: 'Instagram',
+                subtitle: 'ડેઇલી ક્વિઝ',
+                icon: Icons.camera_alt_outlined,
+                color: const Color(0xFFE1306C),
+                url: 'https://instagram.com/gujaratpoliceprep',
+                description: 'રોજિંદા કરંટ અફેર્સ અને GK ની શોર્ટ રીલ્સ જુઓ.',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSocialCard({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color color,
+    required String url,
+    required String description,
+  }) {
+    return Card(
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          _showLinkDialog(
+            title: title,
+            url: url,
+            description: description,
+            icon: icon,
+            color: color,
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: color.withOpacity(0.12),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFooterCopyright() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.shield, color: Color(0xFFFFC107), size: 16),
+              SizedBox(width: 6),
+              Text(
+                'PSI Mock Test • મિશન ખાખી 2026 👮‍♂️',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0D253F)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'સત્યમેવ જયતે • સેવા, સુરક્ષા અને શાંતિ',
+            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '© 2026 Gujarat Police Aspirants Educational Platform',
+            style: TextStyle(fontSize: 10, color: Colors.grey[500]),
           ),
         ],
       ),

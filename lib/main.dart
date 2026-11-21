@@ -11,7 +11,7 @@ class GujaratPolicePrepApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gujarat Police Prep (PSI & Constable)',
+      title: 'PSI Mock Test (Gujarat Police)',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
