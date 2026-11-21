@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../admin/admin_login_screen.dart';
-import '../models/wallet_model.dart';
+import '../models/user_model.dart';
 import 'bookmarks_screen.dart';
+import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,8 +12,17 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  final _wallet = WalletManager();
+  final _user = UserModel();
   bool _notificationsEnabled = true;
+
+  void _logout() {
+    _user.logout();
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,30 +52,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     alignment: Alignment.bottomRight,
                     children: [
                       CircleAvatar(
-                        radius: 40,
+                        radius: 38,
                         backgroundColor: Color(0xFF2A4D7E),
-                        child: Icon(Icons.person, size: 50, color: Colors.white),
+                        child: Icon(Icons.person, size: 48, color: Colors.white),
                       ),
                       CircleAvatar(
-                        radius: 14,
+                        radius: 13,
                         backgroundColor: Color(0xFFFFC107),
-                        child: Icon(Icons.verified, size: 18, color: Color(0xFF0D253F)),
+                        child: Icon(Icons.verified, size: 16, color: Color(0xFF0D253F)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  const Text(
-                    'ખાખી ઉમેદવાર (Police Aspirant)',
-                    style: TextStyle(
+                  Text(
+                    _user.name,
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'લક્ષ્ય: ગુજરાત પોલીસ કોન્સ્ટેબલ & PSI 2026',
-                    style: TextStyle(fontSize: 12, color: Color(0xFFFFC107)),
+                  const SizedBox(height: 2),
+                  Text(
+                    _user.email,
+                    style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFC107),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'ગુજરાત પોલીસ કોન્સ્ટેબલ & PSI 2026',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
+                    ),
                   ),
                   const SizedBox(height: 16),
 
@@ -85,7 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildDivider(),
                         _buildStatColumn('સ્ટ્રીક 🔥', '7 દિવસ'),
                         _buildDivider(),
-                        _buildStatColumn('કોઈન્સ 🪙', '${_wallet.coins}'),
+                        _buildStatColumn('કોઈન્સ 🪙', '${_user.coins}'),
                       ],
                     ),
                   ),
@@ -112,18 +134,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 10),
-                  _buildMenuCard(
-                    icon: Icons.card_giftcard,
-                    color: const Color(0xFFE65100),
-                    title: 'વૉલેટ અને કોઈન્સ',
-                    subtitle: 'હાલનું બેલેન્સ: ${_wallet.coins} કોઈન્સ',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('વૉલેટ ટેબ નીચેથી પણ જોઈ શકાય છે.')),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
                   _buildSwitchCard(
                     icon: Icons.notifications_active_outlined,
                     color: const Color(0xFF2E7D32),
@@ -139,7 +149,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.share_outlined,
                     color: const Color(0xFF6A1B9A),
                     title: 'મિત્રો સાથે એપ શેર કરો',
-                    subtitle: 'રેફરલ કોડ: ${_wallet.referralCode}',
+                    subtitle: 'રેફરલ કોડ: ${_user.myReferralCode}',
                     onTap: () {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('એપ શેરિંગ લિંક તૈયાર થઈ!')),
@@ -152,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.admin_panel_settings,
                     color: const Color(0xFF0D253F),
                     title: '🔐 એડમિન પોર્ટલ (Admin Portal)',
-                    subtitle: '200 પ્રશ્નો Excel અપલોડ, ટેસ્ટ & યૂઝર્સ મેનેજ કરો',
+                    subtitle: 'Excel/CSV થી 200 પ્રશ્નો અપલોડ & મેનેજ કરો',
                     onTap: () {
                       Navigator.push(
                         context,
@@ -165,15 +175,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.info_outline,
                     color: Colors.grey[700]!,
                     title: 'એપ વિશે અને વર્ઝન',
-                    subtitle: 'Gujarat Police Prep v2.0 (Admin Enabled)',
+                    subtitle: 'Gujarat Police Prep v2.5 (2026 Edition)',
                     onTap: () {
                       showAboutDialog(
                         context: context,
                         applicationName: 'ગુજરાત પોલીસ તૈયારી',
-                        applicationVersion: '2.0.0 (Admin Enabled Edition)',
+                        applicationVersion: '2.5.0 (Police Constable & PSI Edition)',
                         applicationLegalese: '© 2026 વિદ્યાર્થી કલ્યાણ મંડળ',
                       );
                     },
+                  ),
+                  const SizedBox(height: 10),
+                  // Logout Button
+                  Card(
+                    elevation: 0.5,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    child: ListTile(
+                      onTap: _logout,
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFFFEBEE),
+                        child: Icon(Icons.logout, color: Colors.red, size: 20),
+                      ),
+                      title: const Text('લૉગ આઉટ (Log Out)', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+                      subtitle: const Text('તમારા ખાતામાંથી બહાર નીકળો', style: TextStyle(fontSize: 11, color: Colors.grey)),
+                    ),
                   ),
                   const SizedBox(height: 24),
                 ],

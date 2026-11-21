@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'screens/main_navigation_screen.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const GujaratPolicePrepApp());
@@ -27,7 +27,7 @@ class GujaratPolicePrepApp extends StatelessWidget {
           elevation: 0,
         ),
       ),
-      home: const MainNavigationScreen(),
+      home: const LoginScreen(),
     );
   }
 }

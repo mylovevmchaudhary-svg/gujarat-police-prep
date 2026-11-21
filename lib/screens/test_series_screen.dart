@@ -1,33 +1,30 @@
 import 'package:flutter/material.dart';
-import '../data/question_bank_generator.dart';
+import '../data/curated_question_bank.dart';
 import '../models/exam_category.dart';
-import '../models/wallet_model.dart';
+import '../models/quiz_model.dart';
+import '../models/user_model.dart';
 import 'quiz_screen.dart';
 
 class TestSeriesScreen extends StatefulWidget {
-  final ExamCategory? category;
+  final ExamCategory? initialCategory;
 
-  const TestSeriesScreen({super.key, this.category});
+  const TestSeriesScreen({super.key, this.initialCategory});
 
   @override
   State<TestSeriesScreen> createState() => _TestSeriesScreenState();
 }
 
 class _TestSeriesScreenState extends State<TestSeriesScreen> {
-  final _wallet = WalletManager();
-  late ExamCategory _selectedCategory;
-  String _activeFilter = 'All'; // 'All', 'Free', 'Unlocked'
-  final TextEditingController _searchController = TextEditingController();
-  int _searchTestNumber = 0;
+  final _user = UserModel();
+  late String _selectedExamId;
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.category ?? ExamCategory.getCategories().first;
+    _selectedExamId = widget.initialCategory?.id ?? 'constable';
   }
 
-  void _showUnlockDialog(int testNumber) {
-    final testId = '${_selectedCategory.id}_$testNumber';
+  void _showUnlockDialog(MockTest test, int testIndex) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -37,7 +34,7 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
             const Icon(Icons.lock, color: Color(0xFFE65100)),
             const SizedBox(width: 8),
             Text(
-              'મોક ટેસ્ટ #$testNumber અનલોક કરો',
+              '${test.title} અનલોક કરો',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
           ],
@@ -47,10 +44,10 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'આ પ્રીમિયમ ટેસ્ટમાં 200 સિલેબસ આધારિત પ્રશ્નો અને 180 મિનિટનો સમય છે.',
+              'આ મોક ટેસ્ટમાં સત્તાવાર સિલેબસ આધારિત 200 પ્રશ્નો અને 180 મિનિટ (3 કલાક) નો સમય છે.',
               style: TextStyle(fontSize: 13),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -62,7 +59,7 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
                 children: [
                   const Text('તમારું બેલેન્સ:', style: TextStyle(fontWeight: FontWeight.w500)),
                   Text(
-                    '${_wallet.coins} કોઈન્સ 🪙',
+                    '${_user.coins} કોઈન્સ 🪙',
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
                   ),
                 ],
@@ -83,7 +80,7 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
             label: const Text('વિડિઓ એડ જોઈને ફ્રી અનલોક કરો'),
             onPressed: () {
               Navigator.pop(ctx);
-              _simulateWatchAd(testNumber);
+              _simulateWatchAd(test);
             },
           ),
           const SizedBox(height: 8),
@@ -97,10 +94,10 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
             icon: const Icon(Icons.monetization_on, color: Color(0xFFFFC107)),
             label: const Text('10 કોઈન્સ વાપરીને અનલોક કરો'),
             onPressed: () {
-              if (_wallet.unlockWithCoins(testId, 10)) {
+              if (_user.unlockWithCoins(test.id, 10)) {
                 Navigator.pop(ctx);
                 setState(() {});
-                _startTest(testNumber);
+                _startTest(test);
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('તમારી પાસે પૂરતા કોઈન્સ નથી! એડ જોઈને કમાઓ.')),
@@ -113,8 +110,7 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
     );
   }
 
-  void _simulateWatchAd(int testNumber) {
-    final testId = '${_selectedCategory.id}_$testNumber';
+  void _simulateWatchAd(MockTest test) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -149,27 +145,21 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
 
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.pop(context); // close ad
-        _wallet.unlockWithAd(testId);
+        Navigator.pop(context); // Close ad
+        _user.unlockWithAd(test.id);
         setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: const Color(0xFF2E7D32),
-            content: Text('મોક ટેસ્ટ #$testNumber સફળતાપૂર્વક અનલોક થઈ ગઈ! 🎉 (+5 બોનસ કોઈન્સ)'),
+            content: Text('${test.title} સફળતાપૂર્વક અનલોક થઈ ગઈ! 🎉 (+5 બોનસ કોઈન્સ)'),
           ),
         );
-        _startTest(testNumber);
+        _startTest(test);
       }
     });
   }
 
-  void _startTest(int testNumber) {
-    final test = QuestionBankGenerator.generateMockTest(
-      examCategoryId: _selectedCategory.id,
-      examTitle: _selectedCategory.titleGujarati,
-      testNumber: testNumber,
-    );
-
+  void _startTest(MockTest test) {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => QuizScreen(test: test)),
@@ -178,25 +168,15 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // 500 Mock Tests
-    const totalTests = 500;
+    final tests = CuratedQuestionBank.getCuratedTests(_selectedExamId);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D253F),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _selectedCategory.titleGujarati,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white),
-            ),
-            const Text(
-              '500 મોક ટેસ્ટ સીરીઝ (200 MCQs • 180 મિનિટ)',
-              style: TextStyle(fontSize: 11, color: Color(0xFFFFC107)),
-            ),
-          ],
+        title: const Text(
+          'મોક ટેસ્ટ સીરીઝ (Mock Tests)',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         actions: [
           Container(
@@ -211,7 +191,7 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
                 const Icon(Icons.monetization_on, size: 16, color: Color(0xFFFFC107)),
                 const SizedBox(width: 4),
                 Text(
-                  '${_wallet.coins}',
+                  '${_user.coins}',
                   style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                 ),
               ],
@@ -221,166 +201,136 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
       ),
       body: Column(
         children: [
-          // Filter Tabs & Search
+          // Exam Switcher Selector (Constable vs PSI)
           Container(
             color: Colors.white,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Column(
+            padding: const EdgeInsets.all(12),
+            child: Row(
               children: [
-                TextField(
-                  controller: _searchController,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    hintText: 'ટેસ્ટ નંબર શોધો (દા.ત. 1 થી 500)...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18),
-                            onPressed: () {
-                              setState(() {
-                                _searchController.clear();
-                                _searchTestNumber = 0;
-                              });
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: const Color(0xFFF0F4F8),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
+                Expanded(
+                  child: _buildExamTab(
+                    title: 'કોન્સ્ટેબલ (LRD)',
+                    examId: 'constable',
+                    isSelected: _selectedExamId == 'constable',
                   ),
-                  onChanged: (val) {
-                    setState(() {
-                      _searchTestNumber = int.tryParse(val.trim()) ?? 0;
-                    });
-                  },
                 ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    _buildFilterChip('બધા (500)', 'All'),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('ફ્રી ટેસ્ટ (3)', 'Free'),
-                    const SizedBox(width: 8),
-                    _buildFilterChip('અનલોક થયેલ', 'Unlocked'),
-                  ],
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildExamTab(
+                    title: 'PSI / ASI',
+                    examId: 'psi',
+                    isSelected: _selectedExamId == 'psi',
+                  ),
                 ),
               ],
             ),
           ),
 
-          // 500 Mock Tests List
+          // Clean Curated Mock Test List
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
-              itemCount: _searchTestNumber > 0 && _searchTestNumber <= totalTests ? 1 : totalTests,
+              itemCount: tests.length,
               itemBuilder: (context, index) {
-                final testNum = _searchTestNumber > 0 ? _searchTestNumber : (index + 1);
-                final testId = '${_selectedCategory.id}_$testNum';
-                final isUnlocked = _wallet.isTestUnlocked(testId, testNum);
+                final test = tests[index];
+                final testNum = index + 1;
+                final isUnlocked = _user.isTestUnlocked(test.id, testNum);
                 final isFree = testNum <= 3;
 
-                if (_activeFilter == 'Free' && !isFree) return const SizedBox.shrink();
-                if (_activeFilter == 'Unlocked' && !isUnlocked) return const SizedBox.shrink();
-
                 return Card(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 1,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 1.5,
                   child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Test Badge / Number Circle
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: isFree
-                                ? const Color(0xFF2E7D32).withOpacity(0.12)
-                                : (isUnlocked
-                                    ? const Color(0xFF1976D2).withOpacity(0.12)
-                                    : Colors.orange.withOpacity(0.12)),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Icon(
-                              isFree
-                                  ? Icons.card_giftcard
-                                  : (isUnlocked ? Icons.lock_open : Icons.lock),
-                              color: isFree
-                                  ? const Color(0xFF2E7D32)
-                                  : (isUnlocked ? const Color(0xFF1976D2) : const Color(0xFFE65100)),
-                              size: 24,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: isFree
+                                    ? const Color(0xFFE8F5E9)
+                                    : (isUnlocked ? const Color(0xFFE3F2FD) : const Color(0xFFFFF3E0)),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                isFree ? '🌟 મફત ટેસ્ટ (Free)' : (isUnlocked ? '✅ અનલોક થયેલ' : '🔒 પ્રીમિયમ'),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isFree
+                                      ? const Color(0xFF2E7D32)
+                                      : (isUnlocked ? const Color(0xFF1565C0) : const Color(0xFFE65100)),
+                                ),
+                              ),
                             ),
+                            Row(
+                              children: const [
+                                Icon(Icons.timer_outlined, size: 14, color: Colors.grey),
+                                SizedBox(width: 4),
+                                Text('180 મિનિટ (3 કલાક)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+
+                        Text(
+                          test.title,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0D253F),
                           ),
                         ),
-                        const SizedBox(width: 14),
-
-                        // Title & Details
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    'મોક ટેસ્ટ #$testNum',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                      color: Color(0xFF0D253F),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: isFree ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Text(
-                                      isFree ? 'મફત (Free)' : (isUnlocked ? 'અનલોક' : 'પ્રીમિયમ'),
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        color: isFree ? const Color(0xFF2E7D32) : const Color(0xFFE65100),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '200 પ્રશ્નો • 180 મિનિટ • 200 ગુણ',
-                                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                              ),
-                            ],
-                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          test.description,
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                         ),
+                        const Divider(height: 22),
 
-                        // CTA Button
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isUnlocked ? const Color(0xFF0D253F) : const Color(0xFFE65100),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          ),
-                          onPressed: () {
-                            if (isUnlocked) {
-                              _startTest(testNum);
-                            } else {
-                              _showUnlockDialog(testNum);
-                            }
-                          },
-                          child: Text(
-                            isUnlocked ? 'શરૂ કરો' : 'અનલોક',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: const [
+                                Icon(Icons.format_list_numbered, size: 16, color: Color(0xFF0D253F)),
+                                SizedBox(width: 4),
+                                Text(
+                                  '200 MCQs • 200 ગુણ',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
+                                ),
+                              ],
+                            ),
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: isUnlocked ? const Color(0xFF0D253F) : const Color(0xFFE65100),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                              ),
+                              icon: Icon(
+                                isUnlocked ? Icons.play_arrow : Icons.lock_open,
+                                size: 16,
+                              ),
+                              label: Text(
+                                isUnlocked ? 'ટેસ્ટ આપો' : 'અનલોક કરો',
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              onPressed: () {
+                                if (isUnlocked) {
+                                  _startTest(test);
+                                } else {
+                                  _showUnlockDialog(test, testNum);
+                                }
+                              },
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -394,25 +344,27 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label, String value) {
-    final isSelected = _activeFilter == value;
+  Widget _buildExamTab({
+    required String title,
+    required String examId,
+    required bool isSelected,
+  }) {
     return GestureDetector(
-      onTap: () => setState(() => _activeFilter = value),
+      onTap: () => setState(() => _selectedExamId = examId),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0D253F) : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? const Color(0xFF0D253F) : Colors.grey.withOpacity(0.3),
-          ),
+          color: isSelected ? const Color(0xFF0D253F) : const Color(0xFFF0F4F8),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.white : Colors.black87,
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? Colors.white : Colors.grey[700],
+            ),
           ),
         ),
       ),

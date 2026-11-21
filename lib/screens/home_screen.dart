@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/exam_category.dart';
-import '../models/wallet_model.dart';
+import '../models/user_model.dart';
 import 'bookmarks_screen.dart';
+import 'profile_screen.dart';
 import 'test_series_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,7 +15,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final _wallet = WalletManager();
+  final _user = UserModel();
   final List<ExamCategory> _categories = ExamCategory.getCategories();
 
   @override
@@ -24,23 +25,41 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: const Color(0xFF0D253F),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'ગુજરાત પોલીસ તૈયારી',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            Text(
-              'મિશન ખાખી 2026 👮‍♂️',
-              style: TextStyle(fontSize: 11, color: Color(0xFFFFC107)),
-            ),
-          ],
+        title: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const ProfileScreen()),
+            ).then((_) => setState(() {}));
+          },
+          child: Row(
+            children: [
+              const CircleAvatar(
+                radius: 17,
+                backgroundColor: Color(0xFF2A4D7E),
+                child: Icon(Icons.person, color: Colors.white, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _user.name,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                  const Text(
+                    'મિશન ખાખી 2026 👮‍♂️',
+                    style: TextStyle(fontSize: 11, color: Color(0xFFFFC107)),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         actions: [
-          // Coins indicator button (navigates to wallet tab)
+          // Coins indicator button (navigates to wallet tab: index 3)
           InkWell(
-            onTap: () => widget.onTabChange(3), // Index 3 is Wallet
+            onTap: () => widget.onTabChange(3),
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -53,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   const Icon(Icons.monetization_on, size: 16, color: Color(0xFFFFC107)),
                   const SizedBox(width: 4),
                   Text(
-                    '${_wallet.coins}',
+                    '${_user.coins}',
                     style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                   ),
                 ],
@@ -81,12 +100,12 @@ class _HomeScreenState extends State<HomeScreen> {
             _buildHeroBanner(),
             const SizedBox(height: 20),
 
-            // Section Header: Exam Cards
+            // Section Header: Exam Cards (Strictly 2 Exams)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'પરીક્ષાઓ પસંદ કરો (Select Exam)',
+              children: const [
+                Text(
+                  'તમારી પરીક્ષા પસંદ કરો (Target Exam)',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -94,26 +113,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 Text(
-                  '${_categories.length} પરીક્ષાઓ',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  '2 સત્તાવાર ભરતી',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            // Exam Cards Grid (Constable, PSI, ASI, Forest, Jail Sipahi, CCE)
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _categories.length,
-              itemBuilder: (context, index) {
-                final category = _categories[index];
-                return _buildExamCard(category);
-              },
-            ),
-            const SizedBox(height: 20),
+            // 2 Exam Cards
+            ..._categories.map((cat) => _buildExamCard(cat)).toList(),
 
-            // Quick Study Tips Card
+            const SizedBox(height: 18),
+
+            // Daily Tip Box
             _buildDailyTipCard(),
           ],
         ),
@@ -153,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: const Text(
-                  '🔥 500+ મોક ટેસ્ટ ઉપલબ્ધ',
+                  '🌟 3 મોક ટેસ્ટ સંપૂર્ણ મફત',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -161,26 +173,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              const Row(
-                children: [
-                  Icon(Icons.lock_open, size: 14, color: Colors.white70),
-                  SizedBox(width: 4),
-                  Text(
-                    'પ્રથમ 3 ટેસ્ટ મફત!',
-                    style: TextStyle(fontSize: 11, color: Colors.white70),
-                  ),
-                ],
+              const Text(
+                '200 MCQs • 180 મિનિટ',
+                style: TextStyle(fontSize: 11, color: Colors.white70),
               ),
             ],
           ),
           const SizedBox(height: 10),
           const Text(
-            'ગુજરાત પોલીસ ભરતી 2026',
+            'ગુજરાત પોલીસ ભરતી તૈયારી',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 4),
           const Text(
-            'દરેક મોક ટેસ્ટમાં 200 પ્રશ્નો • 180 મિનિટ • નેગેટિવ માર્કિંગ 0.25',
+            'કોન્સ્ટેબલ અને PSI ના વાસ્તવિક પ્રશ્નો સાથે મોક ટેસ્ટ આપો.',
             style: TextStyle(fontSize: 12, color: Colors.white70),
           ),
           const SizedBox(height: 14),
@@ -195,10 +201,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 icon: const Icon(Icons.play_arrow, size: 18),
                 label: const Text(
-                  'મોક ટેસ્ટ આપો',
+                  'મોક ટેસ્ટ શરૂ કરો',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
-                onPressed: () => widget.onTabChange(1), // Go to Mock Tests Tab
+                onPressed: () => widget.onTabChange(1), // Go to Mock Tests tab
               ),
               const SizedBox(width: 10),
               OutlinedButton.icon(
@@ -210,7 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 icon: const Icon(Icons.menu_book, size: 16),
                 label: const Text('સિલેબસ જુઓ'),
-                onPressed: () => widget.onTabChange(2), // Go to Syllabus Tab
+                onPressed: () => widget.onTabChange(2), // Go to Syllabus tab
               ),
             ],
           ),
@@ -227,11 +233,10 @@ class _HomeScreenState extends State<HomeScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
         onTap: () {
-          // Open 500 Mock Tests for this specific exam
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => TestSeriesScreen(category: category),
+              builder: (context) => TestSeriesScreen(initialCategory: category),
             ),
           ).then((_) => setState(() {}));
         },
@@ -239,7 +244,6 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Icon Circle
               Container(
                 width: 52,
                 height: 52,
@@ -263,8 +267,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-
-              // Title & Info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,7 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             category.titleGujarati,
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                              fontSize: 15,
                               color: Color(0xFF0D253F),
                             ),
                             overflow: TextOverflow.ellipsis,
@@ -309,26 +311,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 6),
                     Row(
-                      children: [
-                        const Icon(Icons.quiz_outlined, size: 14, color: Color(0xFF2E7D32)),
-                        const SizedBox(width: 4),
+                      children: const [
+                        Icon(Icons.quiz_outlined, size: 14, color: Color(0xFF2E7D32)),
+                        SizedBox(width: 4),
                         Text(
-                          category.totalTestsCount,
-                          style: const TextStyle(
-                            fontSize: 12,
+                          '200 પ્રશ્નો • 180 મિનિટ',
+                          style: TextStyle(
+                            fontSize: 11,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF2E7D32),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        const Text('• 3 ફ્રી મોક ટેસ્ટ', style: TextStyle(fontSize: 11, color: Colors.grey)),
                       ],
                     ),
                   ],
                 ),
               ),
-
-              // Arrow
               const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
             ],
           ),

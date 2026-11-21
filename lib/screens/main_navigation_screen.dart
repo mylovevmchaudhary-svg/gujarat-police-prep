@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../data/syllabus_data.dart';
 import '../models/exam_type.dart';
 import 'home_screen.dart';
-import 'profile_screen.dart';
+import 'refer_screen.dart';
 import 'syllabus_screen.dart';
 import 'test_series_screen.dart';
 import 'wallet_screen.dart';
@@ -33,7 +33,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         subjects: SyllabusData.getSyllabus(ExamType.constable),
       ),
       const WalletScreen(),
-      const ProfileScreen(),
+      const ReferScreen(),
     ];
 
     return Scaffold(
@@ -70,7 +70,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.quiz_outlined),
               activeIcon: Icon(Icons.quiz),
-              label: 'મોક ટેસ્ટ (500)',
+              label: 'મોક ટેસ્ટ',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.menu_book_outlined),
@@ -80,12 +80,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             BottomNavigationBarItem(
               icon: Icon(Icons.account_balance_wallet_outlined),
               activeIcon: Icon(Icons.account_balance_wallet),
-              label: 'વૉલેટ & રેફર',
+              label: 'વૉલેટ',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'પ્રોફાઇલ',
+              icon: Icon(Icons.people_outline),
+              activeIcon: Icon(Icons.people),
+              label: 'રેફર કરો',
             ),
           ],
         ),

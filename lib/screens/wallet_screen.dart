@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/wallet_model.dart';
+import '../models/user_model.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -9,7 +9,7 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
-  final _wallet = WalletManager();
+  final _user = UserModel();
   bool _isWatchingAd = false;
 
   void _watchAd() {
@@ -24,7 +24,7 @@ class _WalletScreenState extends State<WalletScreen> {
           children: [
             Icon(Icons.video_collection, color: Color(0xFF0D253F)),
             SizedBox(width: 8),
-            Text('વિડિઓ એડ પ્લે થઈ રહી છે...', style: TextStyle(fontSize: 16)),
+            Text('વિડિઓ એડ પ્લે થઈ રહી છે...', style: TextStyle(fontSize: 15)),
           ],
         ),
         content: Column(
@@ -43,7 +43,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   CircularProgressIndicator(color: Color(0xFFFFC107)),
                   SizedBox(height: 12),
                   Text(
-                    'Sponsored Ad • 5 સેકન્ડ રાહ જુઓ...',
+                    'Sponsored Ad • 3 સેકન્ડ રાહ જુઓ...',
                     style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
                 ],
@@ -54,13 +54,12 @@ class _WalletScreenState extends State<WalletScreen> {
       ),
     );
 
-    // Simulate 3 second ad duration
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
         Navigator.pop(context); // Close dialog
         setState(() {
           _isWatchingAd = false;
-          _wallet.addCoins(5);
+          _user.addCoins(5, 'વિડિઓ એડ રિવોર્ડ');
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -80,7 +79,7 @@ class _WalletScreenState extends State<WalletScreen> {
   }
 
   void _claimDailyBonus() {
-    if (_wallet.claimDailyBonus()) {
+    if (_user.claimDailyBonus()) {
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -102,7 +101,7 @@ class _WalletScreenState extends State<WalletScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D253F),
         title: const Text(
-          'વૉલેટ અને રેફરલ (Coins & Refer)',
+          'મારું વૉલેટ (My Wallet)',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
@@ -114,7 +113,7 @@ class _WalletScreenState extends State<WalletScreen> {
             // Gold Wallet Card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(22),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF0D253F), Color(0xFF1E3C72)],
@@ -124,8 +123,8 @@ class _WalletScreenState extends State<WalletScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF0D253F).withOpacity(0.3),
-                    blurRadius: 10,
+                    color: const Color(0xFF0D253F).withOpacity(0.35),
+                    blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -137,7 +136,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'તમારું બેલેન્સ (Wallet Balance)',
+                        'કુલ ઉપલબ્ધ કોઈન્સ (Total Balance)',
                         style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                       Container(
@@ -146,15 +145,9 @@ class _WalletScreenState extends State<WalletScreen> {
                           color: Colors.white.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.lock_open, size: 14, color: Color(0xFFFFC107)),
-                            SizedBox(width: 4),
-                            Text(
-                              '3 ફ્રી ટેસ્ટ અનલોક છે',
-                              style: TextStyle(fontSize: 11, color: Colors.white),
-                            ),
-                          ],
+                        child: const Text(
+                          'સક્રિય ખાતું ✅',
+                          style: TextStyle(fontSize: 11, color: Colors.white),
                         ),
                       ),
                     ],
@@ -162,12 +155,12 @@ class _WalletScreenState extends State<WalletScreen> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      const Icon(Icons.monetization_on, size: 36, color: Color(0xFFFFC107)),
-                      const SizedBox(width: 10),
+                      const Icon(Icons.monetization_on, size: 40, color: Color(0xFFFFC107)),
+                      const SizedBox(width: 12),
                       Text(
-                        '${_wallet.coins}',
+                        '${_user.coins}',
                         style: const TextStyle(
-                          fontSize: 36,
+                          fontSize: 38,
                           fontWeight: FontWeight.bold,
                           color: Color(0xFFFFC107),
                         ),
@@ -179,27 +172,37 @@ class _WalletScreenState extends State<WalletScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   const Text(
-                    '💡 10 કોઈન્સ વાપરીને કોઈપણ પ્રીમિયમ મોક ટેસ્ટ એડ જોયા વગર અનલોક કરી શકો છો.',
+                    '💡 આ કોઈન્સ વાપરીને તમે કોઈપણ પ્રીમિયમ મોક ટેસ્ટ એડ્સ જોયા વગર સીધા અનલોક કરી શકો છો.',
                     style: TextStyle(color: Colors.white70, fontSize: 11),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
 
-            // Earn Coins Actions (Daily Bonus & Watch Ad)
+            // Earn Coins Options
+            const Text(
+              'કોઈન્સ કમાઓ (Earn Coins)',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF0D253F),
+              ),
+            ),
+            const SizedBox(height: 12),
+
             Row(
               children: [
                 Expanded(
                   child: _buildActionTile(
-                    icon: Icons.calendar_today,
-                    title: 'ડેઇલી બોનસ',
-                    subtitle: _wallet.isDailyBonusClaimed ? 'આજે ક્લેમ થયેલ' : '+15 કોઈન્સ',
-                    buttonText: _wallet.isDailyBonusClaimed ? 'ક્લેમ કરેલ' : 'ક્લેમ કરો',
+                    icon: Icons.event_available,
+                    title: 'ડેઇલી ચેક-ઇન',
+                    subtitle: _user.isDailyBonusClaimed ? 'આજે ક્લેમ કરેલ' : '+15 કોઈન્સ દરરોજ',
+                    buttonText: _user.isDailyBonusClaimed ? 'ક્લેમ થયેલ' : 'ક્લેમ કરો',
                     color: const Color(0xFF2E7D32),
-                    isEnabled: !_wallet.isDailyBonusClaimed,
+                    isEnabled: !_user.isDailyBonusClaimed,
                     onTap: _claimDailyBonus,
                   ),
                 ),
@@ -208,7 +211,7 @@ class _WalletScreenState extends State<WalletScreen> {
                   child: _buildActionTile(
                     icon: Icons.play_circle_fill,
                     title: 'વિડિઓ એડ જુઓ',
-                    subtitle: '+5 કોઈન્સ મેળવો',
+                    subtitle: '+5 કોઈન્સ પ્રતિ એડ',
                     buttonText: 'એડ જુઓ',
                     color: const Color(0xFFE65100),
                     isEnabled: !_isWatchingAd,
@@ -219,91 +222,60 @@ class _WalletScreenState extends State<WalletScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Refer & Earn Banner
+            // Coins Transaction History
             const Text(
-              'મિત્રોને રેફર કરો અને કોઈન્સ કમાઓ 👥',
+              'કોઈન્સ હિસ્ટ્રી (Transaction History)',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 17,
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF0D253F),
               ),
             ),
             const SizedBox(height: 12),
+
             Container(
-              padding: const EdgeInsets.all(18),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: Colors.grey.withOpacity(0.15)),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'તમારો રેફરલ કોડ (Referral Code):',
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF0F4F8),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF0D253F).withOpacity(0.2)),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: _user.coinHistory.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final item = _user.coinHistory[index];
+                  final isCredit = item['isCredit'] as bool;
+                  return ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: isCredit
+                          ? const Color(0xFFE8F5E9)
+                          : const Color(0xFFFFEBEE),
+                      child: Icon(
+                        isCredit ? Icons.add_circle_outline : Icons.remove_circle_outline,
+                        color: isCredit ? const Color(0xFF2E7D32) : Colors.red,
+                        size: 20,
+                      ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _wallet.referralCode,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 2,
-                            color: Color(0xFF0D253F),
-                          ),
-                        ),
-                        TextButton.icon(
-                          icon: const Icon(Icons.copy, size: 16),
-                          label: const Text('કોપી'),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('રેફરલ કોડ કોપી થયો!')),
-                            );
-                          },
-                        ),
-                      ],
+                    title: Text(
+                      item['title'],
+                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF25D366), // WhatsApp Green
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 46),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    subtitle: Text(
+                      item['date'],
+                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
                     ),
-                    icon: const Icon(Icons.share),
-                    label: const Text(
-                      'WhatsApp પર મિત્રો સાથે શેર કરો',
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                    trailing: Text(
+                      item['amount'],
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: isCredit ? const Color(0xFF2E7D32) : Colors.red,
+                      ),
                     ),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('WhatsApp શેરિંગ લિંક તૈયાર થઈ!')),
-                      );
-                    },
-                  ),
-                  const Divider(height: 28),
-                  const Text(
-                    'રેફરલ નિયમો:',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
-                  const SizedBox(height: 6),
-                  const Text('• તમારો મિત્ર એપ ડાઉનલોડ કરીને કોડ વાપરે એટલે તમને +50 કોઈન્સ મળશે.'),
-                  const Text('• તમારા મિત્રને પણ તરત જ +20 કોઈન્સનું બોનસ મળશે.'),
-                  const Text('• કુલ સફળ રેફરલ્સ: 3 મિત્રો જોડાયા (+150 કોઈન્સ કમાયા).'),
-                ],
+                  );
+                },
               ),
             ),
           ],
