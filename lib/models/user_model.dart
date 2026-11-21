@@ -3,7 +3,7 @@ class UserModel {
   factory UserModel() => _instance;
   UserModel._internal();
 
-  bool isLoggedIn = true;
+  bool isLoggedIn = false; // Default to false so Splash always routes to Login Screen first
   String name = 'વિદ્યાર્થી (Khakhi Aspirant)';
   String email = 'student@khakhi.in';
   String myReferralCode = 'KHAKHI2026';

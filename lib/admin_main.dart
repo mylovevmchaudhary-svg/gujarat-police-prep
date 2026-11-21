@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'admin/admin_dashboard_screen.dart';
+import 'admin/admin_login_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +29,7 @@ class GujaratPoliceAdminApp extends StatelessWidget {
           elevation: 2,
         ),
       ),
-      home: const AdminDashboardScreen(),
+      home: const AdminLoginScreen(), // Secured with Admin Email and Password
     );
   }
 }

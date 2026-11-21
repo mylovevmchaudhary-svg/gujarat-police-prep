@@ -6,9 +6,14 @@ class SupabaseService {
   factory SupabaseService() => _instance;
   SupabaseService._internal();
 
-  // Supabase Project Credentials (User can replace with their supabase.com keys)
-  static const String supabaseUrl = 'https://your-project-id.supabase.co';
-  static const String supabaseAnonKey = 'your-anon-key-here';
+  // Supabase Project Credentials (User can replace with their supabase.com keys or enter via Admin App)
+  static String supabaseUrl = 'https://your-project-id.supabase.co';
+  static String supabaseAnonKey = 'your-anon-key-here';
+
+  static void updateCredentials(String url, String key) {
+    supabaseUrl = url;
+    supabaseAnonKey = key;
+  }
 
   bool get isConfigured =>
       supabaseUrl != 'https://your-project-id.supabase.co' &&

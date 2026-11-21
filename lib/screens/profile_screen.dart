@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../admin/admin_dashboard_screen.dart';
+import '../admin/admin_login_screen.dart';
 import '../models/user_model.dart';
 import 'bookmarks_screen.dart';
 import 'login_screen.dart';
@@ -175,7 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+                        MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
                       );
                     },
                   ),

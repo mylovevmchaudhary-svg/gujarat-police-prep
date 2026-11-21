@@ -3,6 +3,7 @@ class SyllabusTopic {
   final String name;
   final String nameGujarati;
   final List<String> keyPoints;
+  final int mcqCount;
   bool isCompleted;
 
   SyllabusTopic({
@@ -10,6 +11,7 @@ class SyllabusTopic {
     required this.name,
     required this.nameGujarati,
     required this.keyPoints,
+    required this.mcqCount,
     this.isCompleted = false,
   });
 }
@@ -20,6 +22,7 @@ class SyllabusSubject {
   final String titleGujarati;
   final String iconName;
   final int totalMarksWeightage;
+  final int mcqCount;
   final List<SyllabusTopic> topics;
 
   SyllabusSubject({
@@ -28,6 +31,7 @@ class SyllabusSubject {
     required this.titleGujarati,
     required this.iconName,
     required this.totalMarksWeightage,
+    required this.mcqCount,
     required this.topics,
   });
 

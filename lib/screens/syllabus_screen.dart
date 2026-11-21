@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import '../data/curated_question_bank.dart';
 import '../data/syllabus_data.dart';
 import '../models/exam_type.dart';
+import '../models/quiz_model.dart';
 import '../models/syllabus_model.dart';
+import 'quiz_screen.dart';
 
 class SyllabusScreen extends StatefulWidget {
   final ExamType? examType;
@@ -38,6 +41,25 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
     });
   }
 
+  void _startTopicPractice(SyllabusTopic topic) {
+    final tests = CuratedQuestionBank.getCuratedTests(
+      _selectedExam == ExamType.psi ? 'psi' : 'constable',
+    );
+    final baseTest = tests.isNotEmpty ? tests.first : MockTest(
+      id: 'practice_${topic.id}',
+      title: '${topic.nameGujarati} - પ્રેક્ટિસ',
+      description: 'ટોપિક આધારિત મોક ટેસ્ટ',
+      category: 'Practice',
+      durationMinutes: 45,
+      questions: [],
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => QuizScreen(test: baseTest)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final filteredSubjects = _currentSubjects.where((subject) {
@@ -56,6 +78,11 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
       return matchSubject || matchTopics;
     }).toList();
 
+    int totalMCQsInSyllabus = 0;
+    for (var sub in _currentSubjects) {
+      totalMCQsInSyllabus += sub.mcqCount;
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F9),
       appBar: AppBar(
@@ -64,11 +91,11 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'સત્તાવાર અભ્યાસક્રમ (Syllabus)',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white),
+              'સત્તાવાર અભ્યાસક્રમ (Syllabus & MCQs)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
             ),
             Text(
-              _selectedExam.badgeText,
+              '${_selectedExam.badgeText} • કુલ $totalMCQsInSyllabus+ પ્રશ્નો બેંક',
               style: const TextStyle(fontSize: 11, color: Color(0xFFFFC107)),
             ),
           ],
@@ -101,20 +128,57 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
             ),
           ),
 
+          // Total MCQ Bank Banner
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0D253F),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: const [
+                    Icon(Icons.auto_stories, color: Color(0xFFFFC107), size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'વિષયવાર પ્રશ્નોની ગણતરી (MCQ Count):',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                    ),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFC107),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '$totalMCQsInSyllabus MCQs',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11, color: Color(0xFF0D253F)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // Search Bar
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+            color: const Color(0xFFF4F6F9),
             child: TextField(
               decoration: InputDecoration(
                 hintText: 'ટોપિક કે વિષય શોધો (દા.ત. બંધારણ, IPC, ભૂગોળ)...',
                 prefixIcon: const Icon(Icons.search, color: Color(0xFF0D253F)),
                 filled: true,
-                fillColor: const Color(0xFFF0F4F8),
+                fillColor: Colors.white,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
                 ),
               ),
               onChanged: (val) {
@@ -125,10 +189,10 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
             ),
           ),
 
-          // Subject List
+          // Subject List with Topic & MCQ Counts
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
               itemCount: filteredSubjects.length,
               itemBuilder: (context, index) {
                 final subject = filteredSubjects[index];
@@ -170,8 +234,8 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
 
   Widget _buildSubjectCard(SyllabusSubject subject) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      margin: const EdgeInsets.only(bottom: 14),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 1,
       child: ExpansionTile(
         initiallyExpanded: true,
@@ -180,109 +244,127 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
           backgroundColor: const Color(0xFF0D253F).withOpacity(0.08),
           child: const Icon(Icons.menu_book, color: Color(0xFF0D253F)),
         ),
-        title: Text(
-          subject.titleGujarati,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 15,
-            color: Color(0xFF0D253F),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                subject.titleGujarati,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                  color: Color(0xFF0D253F),
+                ),
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE8F5E9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFF2E7D32).withOpacity(0.4)),
+              ),
+              child: Text(
+                '${subject.mcqCount} MCQs',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2E7D32),
+                ),
+              ),
+            ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            '${subject.title} • ભારાંક: ${subject.totalMarksWeightage} ગુણ • ${subject.topics.length} ટોપિક્સ',
+            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
           ),
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '${subject.title} • ભારાંક: ${subject.totalMarksWeightage} ગુણ',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: subject.progressPercentage,
-                      minHeight: 6,
-                      backgroundColor: Colors.grey[200],
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        Color(0xFF2E7D32),
-                      ),
-                    ),
-                  ),
+        children: subject.topics.map((topic) => _buildTopicTile(topic)).toList(),
+      ),
+    );
+  }
+
+  Widget _buildTopicTile(SyllabusTopic topic) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF0D253F)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  topic.nameGujarati,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0D253F)),
                 ),
-                const SizedBox(width: 8),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '${topic.mcqCount} પ્રશ્નો',
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
+                ),
+              ),
+            ],
+          ),
+          if (topic.keyPoints.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 24),
+              child: Text(
+                'મુદ્દા: ${topic.keyPoints.join(" • ")}',
+                style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.only(left: 24),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
                 Text(
-                  '${subject.completedTopicsCount}/${subject.topics.length}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2E7D32),
+                  topic.name,
+                  style: TextStyle(fontSize: 10, fontStyle: FontStyle.italic, color: Colors.grey[500]),
+                ),
+                InkWell(
+                  onTap: () => _startTopicPractice(topic),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D253F),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.play_arrow, size: 12, color: Color(0xFFFFC107)),
+                        SizedBox(width: 2),
+                        Text(
+                          'પ્રેક્ટિસ કરો',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        children: subject.topics.map((topic) {
-          return Container(
-            decoration: BoxDecoration(
-              border: Border(
-                top: BorderSide(color: Colors.grey.withOpacity(0.15)),
-              ),
-            ),
-            child: CheckboxListTile(
-              controlAffinity: ListTileControlAffinity.leading,
-              activeColor: const Color(0xFF2E7D32),
-              title: Text(
-                topic.nameGujarati,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  decoration:
-                      topic.isCompleted ? TextDecoration.lineThrough : null,
-                  color: topic.isCompleted ? Colors.grey : Colors.black87,
-                ),
-              ),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    topic.name,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  if (topic.keyPoints.isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Wrap(
-                      spacing: 6,
-                      children: topic.keyPoints.map((point) {
-                        return Chip(
-                          label: Text(
-                            point,
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                          backgroundColor: const Color(0xFFE8F5E9),
-                          padding: EdgeInsets.zero,
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ],
-              ),
-              value: topic.isCompleted,
-              onChanged: (bool? newVal) {
-                setState(() {
-                  topic.isCompleted = newVal ?? false;
-                });
-              },
-            ),
-          );
-        }).toList(),
+          ),
+        ],
       ),
     );
   }

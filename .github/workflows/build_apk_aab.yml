@@ -56,24 +56,21 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v2.8.0-latest
-          name: "Gujarat Police Student & Admin Apps v2.8.0"
+          tag_name: v2.9.0-latest
+          name: "Gujarat Police Student & Admin Apps v2.9.0"
           body: |
-            ## 👮‍♂️ Gujarat Police (Constable & PSI) Prep Apps v2.8.0
+            ## 👮‍♂️ Gujarat Police (Constable & PSI) Prep Apps v2.9.0
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [Gujarat_Police_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v2.8.0-latest/Gujarat_Police_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [Gujarat_Police_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v2.8.0-latest/Gujarat_Police_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [Gujarat_Police_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v2.8.0-latest/Gujarat_Police_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [Gujarat_Police_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v2.9.0-latest/Gujarat_Police_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [Gujarat_Police_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v2.9.0-latest/Gujarat_Police_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [Gujarat_Police_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v2.9.0-latest/Gujarat_Police_Student_App.aab)
             
-            ### ✨ Features Included:
-            - 👮 **Strictly 2 Target Exams:** Gujarat Police Constable (LRD) & PSI/ASI.
-            - 📝 **Real 200 MCQ Mock Tests:** 180-min timer, -0.25 negative marking, Option 'E' support.
-            - 🌟 **3 Free Tests:** Unlocked for all students.
-            - 💸 **UPI Cashout:** Students can withdraw referral earnings directly to UPI!
-            - 👥 **Refer & Earn:** +50 coins for referrer, +20 bonus for new students.
-            - 🎛️ **Admin Control:** Standalone Admin App to bulk upload 200 MCQs via Excel/CSV, toggle test lock/free, and approve UPI cashouts.
-            - 🛡️ **Zero GitHub Actions Storage:** Release hosted directly on GitHub Releases (0 MB storage quota consumed).
+            ### ✨ What's New in v2.9.0:
+            - 🚀 **Splash -> Login Flow:** Splash Screen with Police logo strictly leads to Login/Sign-up first.
+            - 🔐 **Secure Admin Login:** Admin App is strictly gated with Admin Email & Password (`admin@police.gov.in` / `Police@2026`).
+            - 📚 **Syllabus with MCQ Counts:** Every topic now displays exact MCQ counts (4,000+ total MCQs).
+            - ⚡ **Supabase Live Synchronization:** Unified database state between Student and Admin App.
           files: |
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Admin_App.apk

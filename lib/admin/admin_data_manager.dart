@@ -1,3 +1,5 @@
+import '../services/supabase_service.dart';
+
 class AdminDataManager {
   static final AdminDataManager _instance = AdminDataManager._internal();
   factory AdminDataManager() => _instance;
@@ -31,5 +33,6 @@ class AdminDataManager {
     supabaseUrl = url;
     supabaseKey = key;
     isConnectedToSupabase = url.contains('supabase.co') && key.isNotEmpty;
+    SupabaseService.updateCredentials(url, key);
   }
 }
