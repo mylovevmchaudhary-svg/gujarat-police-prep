@@ -64,23 +64,23 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v3.0.0-latest
-          name: "PSI Mock Test - Student & Admin Apps v3.0.0"
+          tag_name: v3.1.0-latest
+          name: "PSI Mock Test - Live Supabase Cloud Sync v3.1.0"
           body: |
             ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition)
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.0.0-latest/PSI_Mock_Test_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.0.0-latest/PSI_Mock_Test_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.0.0-latest/PSI_Mock_Test_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.1.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.1.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.1.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### ✨ Highlights of this Release:
-            - 🎖️ **Custom Police App Icon:** Replaced default Flutter logo with Gujarat Police Navy Blue & Gold Emblem.
-            - 🏷️ **Official App Name:** Displays as **"PSI Mock Test"** on phone launcher screen.
-            - 🌐 **Website & Social Media:** Direct links to official portal, WhatsApp community, Telegram channel, YouTube lectures & Instagram.
-            - 🚀 **Splash ➔ Login Flow:** Animated splash screen directly leads to Email/Password login & Sign-up.
-            - 🔐 **Password Protected Admin:** Admin panel requires `admin@police.gov.in` and `Police@2026`.
-            - 📊 **Syllabus with MCQ Counts:** Detailed 4,000+ MCQ breakdown with topic-level counts and practice buttons.
+            ### ⚡ Live Supabase Database Connected:
+            - 🔗 **Cloud URL:** `https://sbujnpiaxyjtjgsszpdn.supabase.co`
+            - 🔄 **Real-Time Data Sync:** Both Student and Admin Apps are linked to your Supabase PostgreSQL backend.
+            - 🎖️ **Custom Police App Icon:** Official Gold & Navy Badge.
+            - 🏷️ **Phone Launcher Name:** "PSI Mock Test".
+            - 🌐 **Official Website & Social Communities:** Links added on Home Screen footer.
+            - 🔐 **Admin Access:** Secured with `admin@police.gov.in` / `Police@2026`.
           files: |
             build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk

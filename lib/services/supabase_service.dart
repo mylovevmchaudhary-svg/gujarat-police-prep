@@ -6,9 +6,9 @@ class SupabaseService {
   factory SupabaseService() => _instance;
   SupabaseService._internal();
 
-  // Supabase Project Credentials (User can replace with their supabase.com keys or enter via Admin App)
-  static String supabaseUrl = 'https://your-project-id.supabase.co';
-  static String supabaseAnonKey = 'your-anon-key-here';
+  // Supabase Live Project Credentials
+  static String supabaseUrl = 'https://sbujnpiaxyjtjgsszpdn.supabase.co';
+  static String supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNidWpucGlheHlqdGpnc3N6cGRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyNDk3MDQsImV4cCI6MjExMDgyNTcwNH0.crnzNtr5Kf7XM62E9CwjFua4kBzJ8U5e1UIKG6qNs0I';
 
   static void updateCredentials(String url, String key) {
     supabaseUrl = url;
