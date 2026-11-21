@@ -47,8 +47,12 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   String _formatTime(int totalSeconds) {
-    int minutes = totalSeconds ~/ 60;
+    int hours = totalSeconds ~/ 3600;
+    int minutes = (totalSeconds % 3600) ~/ 60;
     int seconds = totalSeconds % 60;
+    if (hours > 0) {
+      return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+    }
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
@@ -87,14 +91,15 @@ class _QuizScreenState extends State<QuizScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('ટેસ્ટ સબમિટ કરવો છે?'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('• કુલ પ્રશ્નો: $totalCount'),
-            Text('• ઉત્તર આપેલ: $answeredCount'),
-            Text('• બાકી પ્રશ્નો: ${totalCount - answeredCount}'),
+            Text('• ઉત્તર આપેલ: $answeredCount', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E7D32))),
+            Text('• બાકી પ્રશ્નો: ${totalCount - answeredCount}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
             const SizedBox(height: 12),
             const Text(
               'શું તમે ખરેખર ટેસ્ટ પૂર્ણ કરીને પરિણામ જોવા માંગો છો?',
@@ -127,7 +132,7 @@ class _QuizScreenState extends State<QuizScreen> {
   Widget build(BuildContext context) {
     final currentQuestion = widget.test.questions[_currentQuestionIndex];
     final selectedOption = _selectedAnswers[_currentQuestionIndex];
-    final isTimerLow = _remainingSeconds < 300; // less than 5 mins
+    final isTimerLow = _remainingSeconds < 600; // less than 10 mins
 
     return PopScope(
       canPop: false,
@@ -178,7 +183,7 @@ class _QuizScreenState extends State<QuizScreen> {
                     _formatTime(_remainingSeconds),
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 13,
                       color: isTimerLow ? Colors.redAccent : Colors.white,
                     ),
                   ),
@@ -187,7 +192,7 @@ class _QuizScreenState extends State<QuizScreen> {
             ),
             IconButton(
               icon: const Icon(Icons.grid_view, color: Colors.white),
-              tooltip: 'પ્રશ્ન પેલેટ',
+              tooltip: 'પ્રશ્ન પેલેટ (200 MCQs)',
               onPressed: _showQuestionPalette,
             ),
           ],
@@ -202,8 +207,7 @@ class _QuizScreenState extends State<QuizScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE3F2FD),
                       borderRadius: BorderRadius.circular(6),
@@ -217,31 +221,40 @@ class _QuizScreenState extends State<QuizScreen> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(
-                      currentQuestion.isBookmarked
-                          ? Icons.bookmark
-                          : Icons.bookmark_border,
-                      color: currentQuestion.isBookmarked
-                          ? const Color(0xFFFFC107)
-                          : Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        currentQuestion.isBookmarked =
-                            !currentQuestion.isBookmarked;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          duration: const Duration(seconds: 1),
-                          content: Text(
-                            currentQuestion.isBookmarked
-                                ? 'પ્રશ્ન બુકમાર્ક્સમાં સાચવ્યો!'
-                                : 'બુકમાર્ક્સમાંથી દૂર કર્યો.',
-                          ),
+                  Row(
+                    children: [
+                      Text(
+                        '${_selectedAnswers.length}/200 ઉત્તર આપેલ',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton(
+                        icon: Icon(
+                          currentQuestion.isBookmarked
+                              ? Icons.bookmark
+                              : Icons.bookmark_border,
+                          color: currentQuestion.isBookmarked
+                              ? const Color(0xFFFFC107)
+                              : Colors.grey,
                         ),
-                      );
-                    },
+                        onPressed: () {
+                          setState(() {
+                            currentQuestion.isBookmarked =
+                                !currentQuestion.isBookmarked;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              duration: const Duration(seconds: 1),
+                              content: Text(
+                                currentQuestion.isBookmarked
+                                    ? 'પ્રશ્ન બુકમાર્ક્સમાં સાચવ્યો!'
+                                    : 'બુકમાર્ક્સમાંથી દૂર કર્યો.',
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -257,13 +270,13 @@ class _QuizScreenState extends State<QuizScreen> {
                     Text(
                       currentQuestion.questionText,
                       style: const TextStyle(
-                        fontSize: 17,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFF0D253F),
                         height: 1.4,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
                     // Options list
                     ...List.generate(currentQuestion.options.length, (optIdx) {
@@ -427,70 +440,125 @@ class _QuizScreenState extends State<QuizScreen> {
   void _showQuestionPalette() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'પ્રશ્ન પેલેટ (Question Palette)',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF0D253F),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: List.generate(widget.test.questions.length, (idx) {
-                  final isAnswered = _selectedAnswers.containsKey(idx);
-                  final isCurrent = idx == _currentQuestionIndex;
-
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _currentQuestionIndex = idx;
-                      });
-                      Navigator.pop(ctx);
-                    },
-                    child: Container(
-                      width: 42,
-                      height: 42,
-                      decoration: BoxDecoration(
-                        color: isCurrent
-                            ? const Color(0xFF0D253F)
-                            : (isAnswered
-                                ? const Color(0xFF2E7D32)
-                                : Colors.grey[200]),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Text(
-                          '${idx + 1}',
-                          style: TextStyle(
-                            color: isCurrent || isAnswered
-                                ? Colors.white
-                                : Colors.black87,
-                            fontWeight: FontWeight.bold,
-                          ),
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'પ્રશ્ન પેલેટ (200 પ્રશ્નો)',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0D253F),
                         ),
                       ),
+                      Text(
+                        'ઉત્તર આપેલ: ${_selectedAnswers.length} / 200',
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Quick Jump Chips by Subject
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildJumpChip('બંધારણ (1-30)', 0, ctx),
+                        _buildJumpChip('કાયદો (31-65)', 30, ctx),
+                        _buildJumpChip('ઇતિહાસ (66-90)', 65, ctx),
+                        _buildJumpChip('ભૂગોળ (91-115)', 90, ctx),
+                        _buildJumpChip('રીઝનિંગ (116-150)', 115, ctx),
+                        _buildJumpChip('ગણિત (151-170)', 150, ctx),
+                        _buildJumpChip('વિજ્ઞાન (171-185)', 170, ctx),
+                        _buildJumpChip('વર્તમાન (186-200)', 185, ctx),
+                      ],
                     ),
-                  );
-                }),
+                  ),
+                  const Divider(height: 20),
+                  Expanded(
+                    child: GridView.builder(
+                      controller: scrollController,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 6,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
+                      itemCount: widget.test.questions.length,
+                      itemBuilder: (context, idx) {
+                        final isAnswered = _selectedAnswers.containsKey(idx);
+                        final isCurrent = idx == _currentQuestionIndex;
+
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _currentQuestionIndex = idx;
+                            });
+                            Navigator.pop(ctx);
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isCurrent
+                                  ? const Color(0xFF0D253F)
+                                  : (isAnswered
+                                      ? const Color(0xFF2E7D32)
+                                      : Colors.grey[200]),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${idx + 1}',
+                                style: TextStyle(
+                                  color: isCurrent || isAnswered
+                                      ? Colors.white
+                                      : Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
+            );
+          },
         );
       },
+    );
+  }
+
+  Widget _buildJumpChip(String label, int targetIndex, BuildContext ctx) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 6),
+      child: ActionChip(
+        label: Text(label, style: const TextStyle(fontSize: 11)),
+        backgroundColor: const Color(0xFFF0F4F8),
+        onPressed: () {
+          setState(() {
+            _currentQuestionIndex = targetIndex;
+          });
+          Navigator.pop(ctx);
+        },
+      ),
     );
   }
 }

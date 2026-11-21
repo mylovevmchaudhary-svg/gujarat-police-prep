@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import '../data/syllabus_data.dart';
 import '../models/exam_type.dart';
 import '../models/syllabus_model.dart';
 
 class SyllabusScreen extends StatefulWidget {
-  final ExamType examType;
-  final List<SyllabusSubject> subjects;
+  final ExamType? examType;
+  final List<SyllabusSubject>? subjects;
   final String? initialSubjectFilter;
 
   const SyllabusScreen({
     super.key,
-    required this.examType,
-    required this.subjects,
+    this.examType,
+    this.subjects,
     this.initialSubjectFilter,
   });
 
@@ -19,11 +20,27 @@ class SyllabusScreen extends StatefulWidget {
 }
 
 class _SyllabusScreenState extends State<SyllabusScreen> {
+  late ExamType _selectedExam;
+  late List<SyllabusSubject> _currentSubjects;
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    _selectedExam = widget.examType ?? ExamType.constable;
+    _currentSubjects = widget.subjects ?? SyllabusData.getSyllabus(_selectedExam);
+  }
+
+  void _onExamChanged(ExamType newExam) {
+    setState(() {
+      _selectedExam = newExam;
+      _currentSubjects = SyllabusData.getSyllabus(newExam);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final filteredSubjects = widget.subjects.where((subject) {
+    final filteredSubjects = _currentSubjects.where((subject) {
       if (widget.initialSubjectFilter != null) {
         if (!subject.id.contains(widget.initialSubjectFilter!)) {
           return false;
@@ -43,17 +60,50 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
       backgroundColor: const Color(0xFFF4F6F9),
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D253F),
-        title: Text(
-          '${widget.examType.shortTitle} અભ્યાસક્રમ (Syllabus)',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'સત્તાવાર અભ્યાસક્રમ (Syllabus)',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Colors.white),
+            ),
+            Text(
+              _selectedExam.badgeText,
+              style: const TextStyle(fontSize: 11, color: Color(0xFFFFC107)),
+            ),
+          ],
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
-          // Search & Filter Header
+          // Exam Switcher Selector (Constable vs PSI)
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: _buildSelectorTab(
+                    title: 'કોન્સ્ટેબલ (LRD)',
+                    exam: ExamType.constable,
+                    isSelected: _selectedExam == ExamType.constable,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: _buildSelectorTab(
+                    title: 'PSI / ASI',
+                    exam: ExamType.psi,
+                    isSelected: _selectedExam == ExamType.psi,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Search Bar
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
             color: Colors.white,
             child: TextField(
               decoration: InputDecoration(
@@ -91,6 +141,33 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
     );
   }
 
+  Widget _buildSelectorTab({
+    required String title,
+    required ExamType exam,
+    required bool isSelected,
+  }) {
+    return GestureDetector(
+      onTap: () => _onExamChanged(exam),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0D253F) : const Color(0xFFF0F4F8),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? Colors.white : Colors.grey[700],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildSubjectCard(SyllabusSubject subject) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -107,7 +184,7 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
           subject.titleGujarati,
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 16,
+            fontSize: 15,
             color: Color(0xFF0D253F),
           ),
         ),
