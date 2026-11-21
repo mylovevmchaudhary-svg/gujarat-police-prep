@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../admin/admin_login_screen.dart';
 import '../models/wallet_model.dart';
 import 'bookmarks_screen.dart';
 
@@ -146,14 +147,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 10),
+                  // Master Admin Portal Entry Card
                   _buildMenuCard(
-                    icon: Icons.star_rate_outlined,
-                    color: const Color(0xFFF57F17),
-                    title: 'પ્લે સ્ટોર પર રેટિંગ આપો ⭐',
-                    subtitle: 'અમને 5-Star રેટિંગ આપીને સપોર્ટ કરો',
+                    icon: Icons.admin_panel_settings,
+                    color: const Color(0xFF0D253F),
+                    title: '🔐 એડમિન પોર્ટલ (Admin Portal)',
+                    subtitle: '200 પ્રશ્નો Excel અપલોડ, ટેસ્ટ & યૂઝર્સ મેનેજ કરો',
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('પ્લે સ્ટોર રેટિંગ પેજ ખુલશે!')),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
                       );
                     },
                   ),
@@ -162,12 +165,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     icon: Icons.info_outline,
                     color: Colors.grey[700]!,
                     title: 'એપ વિશે અને વર્ઝન',
-                    subtitle: 'Gujarat Police Prep v2.0 (2026 Edition)',
+                    subtitle: 'Gujarat Police Prep v2.0 (Admin Enabled)',
                     onTap: () {
                       showAboutDialog(
                         context: context,
                         applicationName: 'ગુજરાત પોલીસ તૈયારી',
-                        applicationVersion: '2.0.0 (500+ Mock Tests Edition)',
+                        applicationVersion: '2.0.0 (Admin Enabled Edition)',
                         applicationLegalese: '© 2026 વિદ્યાર્થી કલ્યાણ મંડળ',
                       );
                     },

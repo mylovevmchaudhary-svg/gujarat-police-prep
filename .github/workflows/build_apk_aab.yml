@@ -1,4 +1,4 @@
-name: Build Flutter APK & AAB Bundle
+name: Build Flutter APK, AAB & Web Admin Portal
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build Android APK and AAB Bundle
+    name: Build Android APK, AAB Bundle and Web Portal
     runs-on: ubuntu-latest
 
     steps:
@@ -22,11 +22,15 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🛠️ Initialize Android Platform Files
+      - name: 🛠️ Initialize Android and Web Platforms
         run: |
           if [ ! -d "android" ]; then
             echo "Generating Android project scaffolding..."
             flutter create --platforms=android .
+          fi
+          if [ ! -d "web" ]; then
+            echo "Generating Web project scaffolding..."
+            flutter create --platforms=web .
           fi
 
       - name: ☕ Set up Java (JDK 17)
@@ -44,6 +48,9 @@ jobs:
       - name: 📦 Build Release AAB (App Bundle)
         run: flutter build appbundle --release
 
+      - name: 🌐 Build Web Admin Portal
+        run: flutter build web --release
+
       - name: 🚀 Upload APK Artifact (Direct Download)
         uses: actions/upload-artifact@v4
         with:
@@ -56,4 +63,11 @@ jobs:
         with:
           name: GujaratPolicePrep-Release-AAB
           path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 14
+
+      - name: 🚀 Upload Web Admin Portal Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GujaratPolicePrep-Web-Admin-Portal
+          path: build/web
           retention-days: 14
