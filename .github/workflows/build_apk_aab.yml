@@ -1,4 +1,4 @@
-name: Build Release APK & AAB (Secured & Zero-Storage)
+name: Build Lightweight APK & AAB (16MB Split-ABI & Zero-Storage)
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Android APK and AAB Bundle
+    name: Build Lightweight Android APK and AAB Bundle
     runs-on: ubuntu-latest
 
     steps:
@@ -38,12 +38,12 @@ jobs:
       - name: 📦 Install Dependencies
         run: flutter pub get
 
-      - name: 🔒 Build Hardened & Obfuscated Release APK (Anti-Reverse Engineering)
+      - name: ⚡ Build Lean Split-ABI Release APK (~16MB instead of 50MB)
         run: |
           mkdir -p build/debug-info
-          flutter build apk --release --obfuscate --split-debug-info=build/debug-info
+          flutter build apk --release --split-per-abi --obfuscate --split-debug-info=build/debug-info
 
-      - name: 🔒 Build Hardened & Obfuscated Release AAB (Anti-Reverse Engineering)
+      - name: 📦 Build Release AAB (App Bundle for Play Store)
         run: |
           flutter build appbundle --release --obfuscate --split-debug-info=build/debug-info
 
@@ -51,20 +51,22 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v2.5.0-latest
-          name: "Gujarat Police Prep v2.5.0 (Secured & Hardened)"
+          tag_name: v2.6.0-latest
+          name: "Gujarat Police Prep v2.6.0 (Lightweight 16MB & Supabase Live)"
           body: |
             ## 👮‍♂️ Gujarat Police (Constable & PSI) Prep App
-            - 🛡️ **Security:** Obfuscated bytecode, Anti-tampering, Supabase RLS enforced.
-            - 📲 **Direct APK Download:** [app-release.apk](https://github.com/${{ github.repository }}/releases/download/v2.5.0-latest/app-release.apk)
-            - 📦 **Play Store AAB Bundle:** [app-release.aab](https://github.com/${{ github.repository }}/releases/download/v2.5.0-latest/app-release.aab)
+            - ⚡ **Lightweight APK (~16MB):** [app-arm64-v8a-release.apk](https://github.com/${{ github.repository }}/releases/download/v2.6.0-latest/app-arm64-v8a-release.apk)
+            - 📦 **Play Store AAB Bundle:** [app-release.aab](https://github.com/${{ github.repository }}/releases/download/v2.6.0-latest/app-release.aab)
+            - 💸 **UPI Cash Withdrawal:** Students can withdraw referral earnings via UPI!
+            - 🛡️ **Security:** Obfuscated bytecode, Supabase RLS policies enforced.
+            - 🎛️ **Dedicated Admin App:** Manage tests, questions, users, and approve cash withdrawals.
           files: |
-            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
             build/app/outputs/bundle/release/app-release.aab
 
       - name: 🧹 Auto-Purge Short Retention Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: GujaratPolicePrep-Release-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: GujaratPolicePrep-Lean-APK
+          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
           retention-days: 1

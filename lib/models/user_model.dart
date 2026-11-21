@@ -8,7 +8,7 @@ class UserModel {
   String email = 'student@khakhi.in';
   String myReferralCode = 'KHAKHI2026';
   String appliedReferralCode = '';
-  int coins = 50; // Welcome coins
+  int coins = 150; // Welcome + Referral balance
   int totalReferralsCount = 3;
   int referralCoinsEarned = 150;
   bool isDailyBonusClaimed = false;
@@ -17,6 +17,19 @@ class UserModel {
     {'title': 'વેલકમ બોનસ', 'amount': '+30', 'isCredit': true, 'date': 'આજે'},
     {'title': 'રેફરલ બોનસ (મિત્ર જોડાયા)', 'amount': '+50', 'isCredit': true, 'date': 'ગઈકાલે'},
     {'title': 'ડેઇલી ચેક-ઇન બોનસ', 'amount': '+15', 'isCredit': true, 'date': 'આજે'},
+  ];
+
+  // Withdrawal Requests list
+  final List<Map<String, dynamic>> withdrawalRequests = [
+    {
+      'id': 'wd_101',
+      'amount': '₹20.00',
+      'coins': 200,
+      'upi': 'student@upi',
+      'status': 'મંજૂર (Paid) ✅',
+      'date': 'ગઈકાલે',
+      'isSuccess': true,
+    },
   ];
 
   // Set of unlocked test IDs
@@ -79,6 +92,34 @@ class UserModel {
         'amount': '+15',
         'isCredit': true,
         'date': 'આજે',
+      });
+      return true;
+    }
+    return false;
+  }
+
+  bool requestWithdrawal({
+    required int coinsToDeduct,
+    required double inrAmount,
+    required String upiId,
+  }) {
+    if (coins >= coinsToDeduct) {
+      coins -= coinsToDeduct;
+      coinHistory.insert(0, {
+        'title': 'પૈસા ઉપાડ વિનંતી ($upiId)',
+        'amount': '-$coinsToDeduct',
+        'isCredit': false,
+        'date': 'હમણાં',
+      });
+
+      withdrawalRequests.insert(0, {
+        'id': 'wd_${DateTime.now().millisecondsSinceEpoch}',
+        'amount': '₹${inrAmount.toStringAsFixed(2)}',
+        'coins': coinsToDeduct,
+        'upi': upiId,
+        'status': 'પેન્ડિંગ (Processing) ⏳',
+        'date': 'હમણાં',
+        'isSuccess': false,
       });
       return true;
     }

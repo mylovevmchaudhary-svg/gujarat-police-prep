@@ -11,6 +11,7 @@ class WalletScreen extends StatefulWidget {
 class _WalletScreenState extends State<WalletScreen> {
   final _user = UserModel();
   bool _isWatchingAd = false;
+  String _activeTab = 'History'; // 'History' or 'Withdrawals'
 
   void _watchAd() {
     setState(() => _isWatchingAd = true);
@@ -56,7 +57,7 @@ class _WalletScreenState extends State<WalletScreen> {
 
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {
-        Navigator.pop(context); // Close dialog
+        Navigator.pop(context);
         setState(() {
           _isWatchingAd = false;
           _user.addCoins(5, 'વિડિઓ એડ રિવોર્ડ');
@@ -94,6 +95,144 @@ class _WalletScreenState extends State<WalletScreen> {
     }
   }
 
+  void _showWithdrawDialog() {
+    int selectedCoins = 100;
+    double inrValue = 10.0;
+    final upiController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: const [
+                Icon(Icons.account_balance, color: Color(0xFF2E7D32)),
+                SizedBox(width: 8),
+                Text('પૈસા ઉપાડો (Withdraw Cash)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('કોઈન્સ પસંદ કરો (100 કોઈન્સ = ₹10.00):', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      _buildCoinOption(100, 10.0, selectedCoins, (c, v) {
+                        setModalState(() {
+                          selectedCoins = c;
+                          inrValue = v;
+                        });
+                      }),
+                      _buildCoinOption(200, 20.0, selectedCoins, (c, v) {
+                        setModalState(() {
+                          selectedCoins = c;
+                          inrValue = v;
+                        });
+                      }),
+                      _buildCoinOption(500, 50.0, selectedCoins, (c, v) {
+                        setModalState(() {
+                          selectedCoins = c;
+                          inrValue = v;
+                        });
+                      }),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('તમને મળશે:', style: TextStyle(fontWeight: FontWeight.bold)),
+                        Text('₹${inrValue.toStringAsFixed(2)} રોકડા', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E7D32), fontSize: 16)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: upiController,
+                    decoration: const InputDecoration(
+                      labelText: 'તમારો UPI ID લખો',
+                      hintText: 'દા.ત. 9876543210@paytm / user@okhdfcbank',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.payment),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('રદ કરો')),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  final upi = upiController.text.trim();
+                  if (upi.isEmpty || !upi.contains('@')) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('કૃપા કરીને સાચો UPI ID લખો!')),
+                    );
+                    return;
+                  }
+
+                  if (_user.coins < selectedCoins) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('તમારી પાસે પૂરતા કોઈન્સ નથી! મિત્રોને રેફર કરીને કમાઓ.')),
+                    );
+                    return;
+                  }
+
+                  Navigator.pop(ctx);
+                  _user.requestWithdrawal(
+                    coinsToDeduct: selectedCoins,
+                    inrAmount: inrValue,
+                    upiId: upi,
+                  );
+                  setState(() {});
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      content: Text('ઉપાડ વિનંતી સબમિટ થઈ ગઈ! એડમિન દ્વારા ₹$inrValue તમારા UPI ($upi) પર મોકલાશે.'),
+                    ),
+                  );
+                },
+                child: const Text('ઉપાડ વિનંતી મોકલો', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCoinOption(int coins, double inr, int currentSelected, Function(int, double) onSelect) {
+    final isSelected = coins == currentSelected;
+    return ChoiceChip(
+      label: Text('$coins કોઈન્સ (₹${inr.toInt()})'),
+      selected: isSelected,
+      selectedColor: const Color(0xFF0D253F),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : Colors.black87,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        fontSize: 11,
+      ),
+      onSelected: (_) => onSelect(coins, inr),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,7 +240,7 @@ class _WalletScreenState extends State<WalletScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF0D253F),
         title: const Text(
-          'મારું વૉલેટ (My Wallet)',
+          'મારું વૉલેટ & કમાણી (Wallet)',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
       ),
@@ -113,7 +252,7 @@ class _WalletScreenState extends State<WalletScreen> {
             // Gold Wallet Card
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF0D253F), Color(0xFF1E3C72)],
@@ -136,7 +275,7 @@ class _WalletScreenState extends State<WalletScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text(
-                        'કુલ ઉપલબ્ધ કોઈન્સ (Total Balance)',
+                        'કુલ ઉપલબ્ધ કોઈન્સ (Wallet Balance)',
                         style: TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                       Container(
@@ -145,54 +284,58 @@ class _WalletScreenState extends State<WalletScreen> {
                           color: Colors.white.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          'સક્રિય ખાતું ✅',
-                          style: TextStyle(fontSize: 11, color: Colors.white),
+                        child: Text(
+                          'રોકડ મૂલ્ય: ₹${(_user.coins / 10).toStringAsFixed(1)}',
+                          style: const TextStyle(fontSize: 11, color: Color(0xFFFFC107), fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(Icons.monetization_on, size: 40, color: Color(0xFFFFC107)),
-                      const SizedBox(width: 12),
-                      Text(
-                        '${_user.coins}',
-                        style: const TextStyle(
-                          fontSize: 38,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFFFFC107),
-                        ),
+                      Row(
+                        children: [
+                          const Icon(Icons.monetization_on, size: 36, color: Color(0xFFFFC107)),
+                          const SizedBox(width: 8),
+                          Text(
+                            '${_user.coins}',
+                            style: const TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFFFC107),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          const Text('કોઈન્સ', style: TextStyle(fontSize: 14, color: Colors.white)),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'કોઈન્સ (Coins)',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      // Withdraw Button
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF2E7D32),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        ),
+                        icon: const Icon(Icons.account_balance, size: 16),
+                        label: const Text('પૈસા ઉપાડો', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        onPressed: _showWithdrawDialog,
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    '💡 આ કોઈન્સ વાપરીને તમે કોઈપણ પ્રીમિયમ મોક ટેસ્ટ એડ્સ જોયા વગર સીધા અનલોક કરી શકો છો.',
+                    '💡 રેફરલ અને ડેઇલી બોનસથી કમાયેલા કોઈન્સ સીધા UPI દ્વારા તમારા બેંક એકાઉન્ટમાં ઉપાડી શકો છો.',
                     style: TextStyle(color: Colors.white70, fontSize: 11),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
 
             // Earn Coins Options
-            const Text(
-              'કોઈન્સ કમાઓ (Earn Coins)',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0D253F),
-              ),
-            ),
-            const SizedBox(height: 12),
-
             Row(
               children: [
                 Expanded(
@@ -220,65 +363,128 @@ class _WalletScreenState extends State<WalletScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Coins Transaction History
-            const Text(
-              'કોઈન્સ હિસ્ટ્રી (Transaction History)',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF0D253F),
-              ),
+            // History / Withdrawals Tabs
+            Row(
+              children: [
+                _buildFilterTab('કોઈન્સ હિસ્ટ્રી', 'History'),
+                const SizedBox(width: 8),
+                _buildFilterTab('ઉપાડ વિનંતીઓ (Withdrawals)', 'Withdrawals'),
+              ],
             ),
             const SizedBox(height: 12),
 
-            Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.grey.withOpacity(0.15)),
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: _user.coinHistory.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final item = _user.coinHistory[index];
-                  final isCredit = item['isCredit'] as bool;
-                  return ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isCredit
-                          ? const Color(0xFFE8F5E9)
-                          : const Color(0xFFFFEBEE),
-                      child: Icon(
-                        isCredit ? Icons.add_circle_outline : Icons.remove_circle_outline,
-                        color: isCredit ? const Color(0xFF2E7D32) : Colors.red,
-                        size: 20,
+            if (_activeTab == 'History') ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _user.coinHistory.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final item = _user.coinHistory[index];
+                    final isCredit = item['isCredit'] as bool;
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: isCredit
+                            ? const Color(0xFFE8F5E9)
+                            : const Color(0xFFFFEBEE),
+                        child: Icon(
+                          isCredit ? Icons.add_circle_outline : Icons.remove_circle_outline,
+                          color: isCredit ? const Color(0xFF2E7D32) : Colors.red,
+                          size: 20,
+                        ),
                       ),
-                    ),
-                    title: Text(
-                      item['title'],
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                    ),
-                    subtitle: Text(
-                      item['date'],
-                      style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                    ),
-                    trailing: Text(
-                      item['amount'],
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                        color: isCredit ? const Color(0xFF2E7D32) : Colors.red,
+                      title: Text(item['title'], style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      subtitle: Text(item['date'], style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                      trailing: Text(
+                        item['amount'],
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: isCredit ? const Color(0xFF2E7D32) : Colors.red,
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
+            ] else ...[
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.grey.withOpacity(0.15)),
+                ),
+                child: _user.withdrawalRequests.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(
+                          child: Text('હજુ સુધી કોઈ ઉપાડ વિનંતી કરેલ નથી.', style: TextStyle(color: Colors.grey)),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _user.withdrawalRequests.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, index) {
+                          final wd = _user.withdrawalRequests[index];
+                          final isPaid = wd['isSuccess'] == true;
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: isPaid ? const Color(0xFFE8F5E9) : const Color(0xFFFFF3E0),
+                              child: Icon(
+                                isPaid ? Icons.check_circle : Icons.hourglass_top,
+                                color: isPaid ? Colors.green : Colors.orange,
+                                size: 20,
+                              ),
+                            ),
+                            title: Text('${wd['amount']} (${wd['coins']} કોઈન્સ)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            subtitle: Text('UPI: ${wd['upi']} • ${wd['date']}', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                            trailing: Text(
+                              wd['status'],
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: isPaid ? Colors.green : Colors.orange,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterTab(String title, String tabKey) {
+    final isSelected = _activeTab == tabKey;
+    return GestureDetector(
+      onTap: () => setState(() => _activeTab = tabKey),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF0D253F) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: isSelected ? const Color(0xFF0D253F) : Colors.grey.withOpacity(0.3)),
+        ),
+        child: Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.white : Colors.black87,
+          ),
         ),
       ),
     );
