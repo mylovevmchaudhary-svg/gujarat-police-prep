@@ -1,15 +1,16 @@
-name: Build Flutter APK, AAB & Web Admin Portal
+name: Build Release APK & AAB (Zero-Storage Quota)
 
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
-    name: Build Android APK, AAB Bundle and Web Portal
+    name: Build Android APK and AAB Bundle
     runs-on: ubuntu-latest
 
     steps:
@@ -22,15 +23,10 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: 🛠️ Initialize Android and Web Platforms
+      - name: 🛠️ Initialize Android Scaffolding
         run: |
           if [ ! -d "android" ]; then
-            echo "Generating Android project scaffolding..."
             flutter create --platforms=android .
-          fi
-          if [ ! -d "web" ]; then
-            echo "Generating Web project scaffolding..."
-            flutter create --platforms=web .
           fi
 
       - name: ☕ Set up Java (JDK 17)
@@ -39,7 +35,7 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
 
-      - name: 📦 Install Flutter Dependencies
+      - name: 📦 Install Dependencies
         run: flutter pub get
 
       - name: 📱 Build Release APK
@@ -48,26 +44,24 @@ jobs:
       - name: 📦 Build Release AAB (App Bundle)
         run: flutter build appbundle --release
 
-      - name: 🌐 Build Web Admin Portal
-        run: flutter build web --release
+      - name: 🚀 Publish Direct GitHub Release (Zero-Storage - Does NOT consume Actions Quota)
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/heads/main')
+        with:
+          tag_name: v2.5.0-latest
+          name: "Gujarat Police Prep v2.5.0 Latest Release"
+          body: |
+            ## 👮‍♂️ Gujarat Police (Constable & PSI) Prep App
+            - 📲 **Direct APK Download:** [app-release.apk](https://github.com/${{ github.repository }}/releases/download/v2.5.0-latest/app-release.apk)
+            - 📦 **Play Store AAB Bundle:** [app-release.aab](https://github.com/${{ github.repository }}/releases/download/v2.5.0-latest/app-release.aab)
+            - ✅ Built with Supabase integration, App Logo & Splash Screen, and dedicated Admin App.
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            build/app/outputs/bundle/release/app-release.aab
 
-      - name: 🚀 Upload APK Artifact (Direct Download)
+      - name: 🧹 Short Retention (Auto-deletes temporary artifacts in 1 day to save quota)
         uses: actions/upload-artifact@v4
         with:
           name: GujaratPolicePrep-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 14
-
-      - name: 🚀 Upload AAB Bundle Artifact (Direct Download)
-        uses: actions/upload-artifact@v4
-        with:
-          name: GujaratPolicePrep-Release-AAB
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 14
-
-      - name: 🚀 Upload Web Admin Portal Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: GujaratPolicePrep-Web-Admin-Portal
-          path: build/web
-          retention-days: 14
+          retention-days: 1
