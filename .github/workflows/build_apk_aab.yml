@@ -1,4 +1,4 @@
-name: Build Lean APK & AAB (16MB Split-ABI & Zero-Storage)
+name: Build Lean Student & Admin APKs (Zero-Storage Release)
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    name: Build Android APK and AAB Bundle
+    name: Build Gujarat Police Student & Admin Apps
     runs-on: ubuntu-latest
 
     steps:
@@ -37,34 +37,44 @@ jobs:
       - name: 📦 Install Dependencies
         run: flutter pub get
 
-      - name: ⚡ Build Lean Split-ABI Release APK (~16MB instead of 50MB)
+      - name: ⚡ Build Student Release APK (~16MB)
         run: |
           flutter build apk --release --split-per-abi
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk
+
+      - name: 🎛️ Build Standalone Admin Release APK (~16MB)
+        run: |
+          flutter build apk --target=lib/admin_main.dart --release --split-per-abi
+          cp build/app/outputs/flutter-apk/app-arm64-v8a-release.apk build/app/outputs/flutter-apk/Gujarat_Police_Admin_App.apk
 
       - name: 📦 Build Release AAB (App Bundle for Play Store)
         run: |
           flutter build appbundle --release
+          cp build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/Gujarat_Police_Student_App.aab
 
       - name: 🚀 Publish Direct GitHub Release (Zero-Storage - Does NOT consume Actions Quota)
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v2.7.0-latest
-          name: "Gujarat Police Prep v2.7.0 (Lean 16MB & UPI Cashout)"
+          tag_name: v2.8.0-latest
+          name: "Gujarat Police Student & Admin Apps v2.8.0"
           body: |
-            ## 👮‍♂️ Gujarat Police (Constable & PSI) Prep App
-            - ⚡ **Lightweight APK (~16MB):** [app-arm64-v8a-release.apk](https://github.com/${{ github.repository }}/releases/download/v2.7.0-latest/app-arm64-v8a-release.apk)
-            - 📦 **Play Store AAB Bundle:** [app-release.aab](https://github.com/${{ github.repository }}/releases/download/v2.7.0-latest/app-release.aab)
-            - 💸 **UPI Cash Withdrawal:** Students can withdraw referral earnings directly to UPI!
-            - 🛡️ **Security:** Anti-tampering, Supabase RLS policies enforced.
-            - 🎛️ **Dedicated Admin App:** Manage tests, questions, users, and approve cash withdrawals.
+            ## 👮‍♂️ Gujarat Police (Constable & PSI) Prep Apps v2.8.0
+            
+            ### 📥 Download Android Applications:
+            - 📱 **Student Mobile App (~16MB):** [Gujarat_Police_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v2.8.0-latest/Gujarat_Police_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [Gujarat_Police_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v2.8.0-latest/Gujarat_Police_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [Gujarat_Police_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v2.8.0-latest/Gujarat_Police_Student_App.aab)
+            
+            ### ✨ Features Included:
+            - 👮 **Strictly 2 Target Exams:** Gujarat Police Constable (LRD) & PSI/ASI.
+            - 📝 **Real 200 MCQ Mock Tests:** 180-min timer, -0.25 negative marking, Option 'E' support.
+            - 🌟 **3 Free Tests:** Unlocked for all students.
+            - 💸 **UPI Cashout:** Students can withdraw referral earnings directly to UPI!
+            - 👥 **Refer & Earn:** +50 coins for referrer, +20 bonus for new students.
+            - 🎛️ **Admin Control:** Standalone Admin App to bulk upload 200 MCQs via Excel/CSV, toggle test lock/free, and approve UPI cashouts.
+            - 🛡️ **Zero GitHub Actions Storage:** Release hosted directly on GitHub Releases (0 MB storage quota consumed).
           files: |
-            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-            build/app/outputs/bundle/release/app-release.aab
-
-      - name: 🧹 Auto-Purge Short Retention Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: GujaratPolicePrep-Lean-APK
-          path: build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
-          retention-days: 1
+            build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk
+            build/app/outputs/flutter-apk/Gujarat_Police_Admin_App.apk
+            build/app/outputs/bundle/release/Gujarat_Police_Student_App.aab

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../admin/admin_login_screen.dart';
+import '../admin/admin_dashboard_screen.dart';
 import '../models/user_model.dart';
 import 'bookmarks_screen.dart';
 import 'login_screen.dart';
+import 'refer_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -48,15 +49,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               child: Column(
                 children: [
-                  const Stack(
+                  Stack(
                     alignment: Alignment.bottomRight,
                     children: [
-                      CircleAvatar(
-                        radius: 38,
-                        backgroundColor: Color(0xFF2A4D7E),
-                        child: Icon(Icons.person, size: 48, color: Colors.white),
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFFFC107), width: 2),
+                        ),
+                        child: const CircleAvatar(
+                          radius: 36,
+                          backgroundColor: Color(0xFF2A4D7E),
+                          child: Icon(Icons.person, size: 44, color: Colors.white),
+                        ),
                       ),
-                      CircleAvatar(
+                      const CircleAvatar(
                         radius: 13,
                         backgroundColor: Color(0xFFFFC107),
                         child: Icon(Icons.verified, size: 16, color: Color(0xFF0D253F)),
@@ -77,15 +85,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _user.email,
                     style: const TextStyle(fontSize: 12, color: Colors.white70),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFC107),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Text(
-                      'ગુજરાત પોલીસ કોન્સ્ટેબલ & PSI 2026',
+                      'ગુજરાત પોલીસ કોન્સ્ટેબલ & PSI 2026 👮‍♂️',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
                     ),
                   ),
@@ -121,6 +129,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 children: [
+                  // Refer & Earn Card
+                  Card(
+                    elevation: 1,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    color: const Color(0xFFFFF8E1),
+                    child: ListTile(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ReferScreen()),
+                        );
+                      },
+                      leading: const CircleAvatar(
+                        backgroundColor: Color(0xFFFFC107),
+                        child: Icon(Icons.people, color: Color(0xFF0D253F), size: 22),
+                      ),
+                      title: const Text('👥 મિત્રોને રેફર કરો & ₹૫૦ કમાઓ', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                      subtitle: Text('તમારો કોડ: ${_user.myReferralCode}', style: const TextStyle(fontSize: 12, color: Color(0xFFF57F17), fontWeight: FontWeight.bold)),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFFF57F17)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
                   _buildMenuCard(
                     icon: Icons.bookmark_outline,
                     color: const Color(0xFF1976D2),
@@ -134,6 +165,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 10),
+
+                  // Dedicated Admin Management Section
+                  _buildMenuCard(
+                    icon: Icons.admin_panel_settings,
+                    color: const Color(0xFF0D253F),
+                    title: '🎛️ માસ્ટર એડમિન પોર્ટલ (Admin Portal)',
+                    subtitle: 'MCQs અપલોડ, ટેસ્ટ ફ્રી/લોક, UPI પેમેન્ટ મંજૂર કરો',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  _buildMenuCard(
+                    icon: Icons.download_for_offline,
+                    color: const Color(0xFF2E7D32),
+                    title: '⬇️ Download Admin App APK',
+                    subtitle: 'Gujarat_Police_Admin_App.apk સીધું ડાઉનલોડ કરો',
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: Color(0xFF0D253F),
+                          content: Text('Admin APK ફાઇલ: Gujarat_Police_Admin_App.apk'),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
                   _buildSwitchCard(
                     icon: Icons.notifications_active_outlined,
                     color: const Color(0xFF2E7D32),
@@ -145,47 +208,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     },
                   ),
                   const SizedBox(height: 10),
-                  _buildMenuCard(
-                    icon: Icons.share_outlined,
-                    color: const Color(0xFF6A1B9A),
-                    title: 'મિત્રો સાથે એપ શેર કરો',
-                    subtitle: 'રેફરલ કોડ: ${_user.myReferralCode}',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('એપ શેરિંગ લિંક તૈયાર થઈ!')),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
-                  // Master Admin Portal Entry Card
-                  _buildMenuCard(
-                    icon: Icons.admin_panel_settings,
-                    color: const Color(0xFF0D253F),
-                    title: '🔐 એડમિન પોર્ટલ (Admin Portal)',
-                    subtitle: 'Excel/CSV થી 200 પ્રશ્નો અપલોડ & મેનેજ કરો',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const AdminLoginScreen()),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 10),
+
                   _buildMenuCard(
                     icon: Icons.info_outline,
                     color: Colors.grey[700]!,
                     title: 'એપ વિશે અને વર્ઝન',
-                    subtitle: 'Gujarat Police Prep v2.5 (2026 Edition)',
+                    subtitle: 'Gujarat Police Prep & Admin Suite v2.8 (2026)',
                     onTap: () {
                       showAboutDialog(
                         context: context,
                         applicationName: 'ગુજરાત પોલીસ તૈયારી',
-                        applicationVersion: '2.5.0 (Police Constable & PSI Edition)',
-                        applicationLegalese: '© 2026 વિદ્યાર્થી કલ્યાણ મંડળ',
+                        applicationVersion: '2.8.0 (Constable & PSI Special Edition)',
+                        applicationLegalese: '© 2026 ગુજરાત પોલીસ ભરતી સહાય મંચ',
                       );
                     },
                   ),
                   const SizedBox(height: 10),
+
                   // Logout Button
                   Card(
                     elevation: 0.5,
@@ -259,15 +298,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       elevation: 0.5,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: SwitchListTile(
-        activeColor: const Color(0xFF0D253F),
+        value: value,
+        onChanged: onChanged,
         secondary: CircleAvatar(
           backgroundColor: color.withOpacity(0.12),
           child: Icon(icon, color: color, size: 22),
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
         subtitle: Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-        value: value,
-        onChanged: onChanged,
+        activeColor: const Color(0xFF0D253F),
       ),
     );
   }
