@@ -3,9 +3,12 @@ class Question {
   final String subject;
   final String questionText;
   final List<String> options;
-  final int correctOptionIndex; // 0 for A, 1 for B, 2 for C, 3 for D
+  final int correctOptionIndex; // 0 for A, 1 for B, 2 for C, 3 for D, 4 for E
   final String explanation;
   final String? topic;
+  final String? topicId;
+  final String? examId;
+  final String? difficulty;
   bool isBookmarked;
 
   Question({
@@ -16,6 +19,9 @@ class Question {
     required this.correctOptionIndex,
     required this.explanation,
     this.topic,
+    this.topicId,
+    this.examId,
+    this.difficulty,
     this.isBookmarked = false,
   });
 }
@@ -28,7 +34,10 @@ class MockTest {
   final int durationMinutes;
   final double positiveMarksPerQuestion;
   final double negativeMarksPerQuestion;
-  final List<Question> questions;
+  final bool isFree;
+  final int dbTotalQuestions;
+  final String examId;
+  List<Question> questions;
 
   MockTest({
     required this.id,
@@ -38,10 +47,13 @@ class MockTest {
     required this.durationMinutes,
     this.positiveMarksPerQuestion = 1.0,
     this.negativeMarksPerQuestion = 0.25,
+    this.isFree = true,
+    this.dbTotalQuestions = 200,
+    this.examId = 'constable',
     required this.questions,
   });
 
-  int get totalQuestions => questions.length;
+  int get totalQuestions => questions.isNotEmpty ? questions.length : dbTotalQuestions;
   double get totalPossibleMarks => totalQuestions * positiveMarksPerQuestion;
 }
 

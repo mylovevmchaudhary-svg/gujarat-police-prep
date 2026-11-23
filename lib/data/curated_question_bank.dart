@@ -4,17 +4,10 @@ import '../services/supabase_service.dart';
 class CuratedQuestionBank {
   // Dynamic question repository loaded from Supabase or Admin Console
   // ZERO hardcoded questions - 100% database driven as requested!
-  static final Map<String, List<Question>> _cachedQuestions = {
-    'constable_1': [],
-    'constable_2': [],
-    'constable_3': [],
-    'constable_4': [],
-    'constable_5': [],
-    'psi_1': [],
-    'psi_2': [],
-    'psi_3': [],
-    'psi_4': [],
-  };
+  static final Map<String, List<Question>> _cachedQuestions = {};
+
+  // Dynamic Mock Tests cache grouped by Exam ID (Constable / PSI)
+  static final Map<String, List<MockTest>> _dynamicTestsByExam = {};
 
   /// Set questions for a specific test
   static void setQuestions(String testId, List<Question> questions) {
@@ -31,12 +24,44 @@ class CuratedQuestionBank {
     _cachedQuestions[testId]?.removeWhere((q) => q.id == questionId);
   }
 
-  /// Load questions from Supabase for a test
-  static Future<void> loadQuestionsFromSupabase(String testId) async {
-    final questions = await SupabaseService().fetchQuestionsForTest(testId);
+  /// Load questions from Supabase for a test (Full Join + Pagination)
+  static Future<List<Question>> loadQuestionsFromSupabase(String testId) async {
+    final questions = await SupabaseService().fetchAllQuestionsForTest(testId);
     if (questions.isNotEmpty) {
       _cachedQuestions[testId] = questions;
+      // Update in test list as well
+      for (final list in _dynamicTestsByExam.values) {
+        for (final t in list) {
+          if (t.id == testId) {
+            t.questions = questions;
+          }
+        }
+      }
     }
+    return _cachedQuestions[testId] ?? [];
+  }
+
+  /// Load all dynamic mock tests from Supabase `mock_tests` table (1 to 100+ tests!)
+  static Future<List<MockTest>> loadAllTestsFromSupabase({String? examId}) async {
+    final liveTests = await SupabaseService().fetchMockTests(examId: examId);
+    if (liveTests.isNotEmpty) {
+      for (final t in liveTests) {
+        if (_cachedQuestions.containsKey(t.id)) {
+          t.questions = _cachedQuestions[t.id]!;
+        }
+      }
+
+      if (examId != null && examId.isNotEmpty) {
+        _dynamicTestsByExam[examId] = liveTests;
+      } else {
+        _dynamicTestsByExam['constable'] =
+            liveTests.where((t) => t.examId == 'constable').toList();
+        _dynamicTestsByExam['psi'] =
+            liveTests.where((t) => t.examId == 'psi').toList();
+      }
+      return liveTests;
+    }
+    return getCuratedTests(examId ?? 'constable');
   }
 
   /// Count questions available for a given subject keyword
@@ -52,8 +77,12 @@ class CuratedQuestionBank {
     return count;
   }
 
-  /// Get mock tests for Constable or PSI with real dynamic questions
+  /// Get mock tests for Constable or PSI - returns dynamic tests from Supabase!
   static List<MockTest> getCuratedTests(String examId) {
+    if (_dynamicTestsByExam.containsKey(examId) &&
+        _dynamicTestsByExam[examId]!.isNotEmpty) {
+      return _dynamicTestsByExam[examId]!;
+    }
     if (examId == 'psi') {
       return _getPsiTests();
     } else {

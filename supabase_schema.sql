@@ -37,14 +37,27 @@ CREATE TABLE IF NOT EXISTS public.mock_tests (
 -- 3. Questions Table (All questions added by Admin or Supabase)
 CREATE TABLE IF NOT EXISTS public.questions (
     id TEXT PRIMARY KEY DEFAULT ('q_' || gen_random_uuid()::text),
-    test_id TEXT REFERENCES public.mock_tests(id) ON DELETE CASCADE,
+    test_id TEXT REFERENCES public.mock_tests(id) ON DELETE SET NULL,
     exam_id TEXT DEFAULT 'constable',
     subject TEXT NOT NULL,
+    topic_id TEXT,
     question_text TEXT NOT NULL,
     options JSONB NOT NULL, -- Array: ["Option A", "Option B", "Option C", "Option D", "પ્રયાસ કરેલ નથી"]
     correct_option_index INTEGER NOT NULL, -- 0 to 4
     explanation TEXT,
+    question_type TEXT DEFAULT 'MCQ',
+    difficulty TEXT DEFAULT 'EASY',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 3B. Mock Test Questions Mapping Table (Supports Flexible Many-to-Many Linking)
+CREATE TABLE IF NOT EXISTS public.mock_test_questions (
+    id BIGSERIAL PRIMARY KEY,
+    test_id TEXT REFERENCES public.mock_tests(id) ON DELETE CASCADE,
+    question_id TEXT REFERENCES public.questions(id) ON DELETE CASCADE,
+    position INTEGER DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(test_id, question_id)
 );
 
 -- 4. Syllabus Structure Table
@@ -56,6 +69,17 @@ CREATE TABLE IF NOT EXISTS public.syllabus (
     icon_name TEXT DEFAULT 'gavel',
     total_marks_weightage INTEGER DEFAULT 15,
     topics JSONB DEFAULT '[]'::jsonb,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- 4B. Syllabus Topics Table (Dynamic Topics for each Syllabus Subject)
+CREATE TABLE IF NOT EXISTS public.syllabus_topics (
+    id TEXT PRIMARY KEY DEFAULT ('topic_' || gen_random_uuid()::text),
+    syllabus_id TEXT REFERENCES public.syllabus(id) ON DELETE CASCADE,
+    title TEXT,
+    title_gujarati TEXT NOT NULL,
+    content_type TEXT DEFAULT 'MCQ',
+    paper_part TEXT DEFAULT 'PAPER_1',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -144,7 +168,9 @@ ON CONFLICT (id) DO NOTHING;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.mock_tests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.questions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.mock_test_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.syllabus ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.syllabus_topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.withdrawals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wallet_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.app_settings ENABLE ROW LEVEL SECURITY;
@@ -157,8 +183,14 @@ CREATE POLICY "Public Full Access Mock Tests" ON public.mock_tests FOR ALL USING
 DROP POLICY IF EXISTS "Public Full Access Questions" ON public.questions;
 CREATE POLICY "Public Full Access Questions" ON public.questions FOR ALL USING (true);
 
+DROP POLICY IF EXISTS "Public Full Access Mock Test Questions" ON public.mock_test_questions;
+CREATE POLICY "Public Full Access Mock Test Questions" ON public.mock_test_questions FOR ALL USING (true);
+
 DROP POLICY IF EXISTS "Public Full Access Syllabus" ON public.syllabus;
 CREATE POLICY "Public Full Access Syllabus" ON public.syllabus FOR ALL USING (true);
+
+DROP POLICY IF EXISTS "Public Full Access Syllabus Topics" ON public.syllabus_topics;
+CREATE POLICY "Public Full Access Syllabus Topics" ON public.syllabus_topics FOR ALL USING (true);
 
 DROP POLICY IF EXISTS "Public Full Access Settings" ON public.app_settings;
 CREATE POLICY "Public Full Access Settings" ON public.app_settings FOR ALL USING (true);
@@ -185,6 +217,24 @@ END $$;
 DO $$
 BEGIN
     ALTER PUBLICATION supabase_realtime ADD TABLE public.questions;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.mock_test_questions;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.syllabus;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.syllabus_topics;
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 

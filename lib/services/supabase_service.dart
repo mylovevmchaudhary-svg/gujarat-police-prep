@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import '../models/quiz_model.dart';
+import '../models/syllabus_model.dart';
 import '../models/user_model.dart';
 import 'security_vault.dart';
 
@@ -207,27 +208,258 @@ class SupabaseService {
     } catch (_) {}
   }
 
-  /// Fetch questions for a mock test (100% database driven)
-  Future<List<Question>> fetchQuestionsForTest(String testId) async {
-    final result = await _restGet('questions?test_id=eq.$testId&select=*');
+  /// Helper to safely map raw database row to Question model
+  Question _mapToQuestion(Map<String, dynamic> item) {
+    final opts = item['options'];
+    List<String> optionsList = [];
+    if (opts is List) {
+      optionsList = opts.map((e) => e.toString()).toList();
+    }
+    if (optionsList.length == 4) {
+      optionsList.add('પ્રયાસ કરેલ નથી');
+    }
+
+    int correctIdx = 0;
+    final rawCorrect = item['correct_option_index'];
+    if (rawCorrect is num) {
+      correctIdx = rawCorrect.toInt().clamp(0, 4);
+    } else if (rawCorrect is String) {
+      final s = rawCorrect.trim().toUpperCase();
+      if (s == 'A' || s == '0') correctIdx = 0;
+      if (s == 'B' || s == '1') correctIdx = 1;
+      if (s == 'C' || s == '2') correctIdx = 2;
+      if (s == 'D' || s == '3') correctIdx = 3;
+      if (s == 'E' || s == '4') correctIdx = 4;
+    }
+
+    return Question(
+      id: item['id']?.toString() ?? '',
+      subject: item['subject']?.toString() ?? 'સામાન્ય જ્ઞાન',
+      questionText: item['question_text']?.toString() ?? '',
+      options: optionsList,
+      correctOptionIndex: correctIdx,
+      explanation: item['explanation']?.toString() ?? '',
+      topicId: item['topic_id']?.toString(),
+      examId: item['exam_id']?.toString(),
+      difficulty: item['difficulty']?.toString(),
+    );
+  }
+
+  /// 1. Fetch DYNAMIC Mock Tests from Supabase `mock_tests` table (0 hardcoded limits)
+  Future<List<MockTest>> fetchMockTests({String? examId}) async {
+    String endpoint = 'mock_tests?select=*&order=created_at.asc';
+    if (examId != null && examId.isNotEmpty) {
+      endpoint = 'mock_tests?exam_id=eq.$examId&select=*&order=created_at.asc';
+    }
+
+    final result = await _restGet(endpoint);
     if (result is List && result.isNotEmpty) {
-      return result.map<Question>((item) {
-        final opts = item['options'];
-        List<String> optionsList = [];
-        if (opts is List) {
-          optionsList = opts.map((e) => e.toString()).toList();
-        }
-        return Question(
+      return result.map<MockTest>((item) {
+        final isFreeVal = item['is_free'] == true;
+        return MockTest(
           id: item['id']?.toString() ?? '',
-          subject: item['subject']?.toString() ?? 'સામાન્ય જ્ઞાન',
-          questionText: item['question_text']?.toString() ?? '',
-          options: optionsList,
-          correctOptionIndex: (item['correct_option_index'] as num?)?.toInt() ?? 0,
-          explanation: item['explanation']?.toString() ?? '',
+          title: item['title']?.toString() ?? 'મોક ટેસ્ટ',
+          description: item['description']?.toString() ?? '',
+          category: isFreeVal ? 'Free Mock' : 'Premium Mock',
+          durationMinutes: (item['duration_minutes'] as num?)?.toInt() ?? 180,
+          positiveMarksPerQuestion: (item['positive_marks'] as num?)?.toDouble() ?? 1.0,
+          negativeMarksPerQuestion: (item['negative_marks'] as num?)?.toDouble() ?? 0.25,
+          isFree: isFreeVal,
+          dbTotalQuestions: (item['total_questions'] as num?)?.toInt() ?? 200,
+          examId: item['exam_id']?.toString() ?? 'constable',
+          questions: [],
         );
       }).toList();
     }
     return [];
+  }
+
+  /// 2. Fetch ALL Questions for a Test using Paginated JOIN with `mock_test_questions` and `questions`
+  /// Handles 200, 500, 1000, 10,000+ MCQs without dropping a single question!
+  Future<List<Question>> fetchAllQuestionsForTest(String testId) async {
+    final List<Question> collected = [];
+    final Set<String> seenIds = {};
+    const int batchLimit = 500;
+    int offset = 0;
+    bool hasMore = true;
+
+    // A. Query via `mock_test_questions` JOIN `questions`
+    while (hasMore) {
+      final endpoint =
+          'mock_test_questions?test_id=eq.$testId&select=position,questions(*)&order=position.asc&limit=$batchLimit&offset=$offset';
+      final batch = await _restGet(endpoint);
+      if (batch is List && batch.isNotEmpty) {
+        for (final row in batch) {
+          final qData = row['questions'];
+          if (qData is Map) {
+            final q = _mapToQuestion(Map<String, dynamic>.from(qData));
+            if (seenIds.add(q.id)) {
+              collected.add(q);
+            }
+          }
+        }
+        if (batch.length < batchLimit) {
+          hasMore = false;
+        } else {
+          offset += batchLimit;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    // B. Also query direct questions table where test_id = testId (if any added directly)
+    offset = 0;
+    hasMore = true;
+    while (hasMore) {
+      final endpoint =
+          'questions?test_id=eq.$testId&select=*&order=created_at.asc&limit=$batchLimit&offset=$offset';
+      final batch = await _restGet(endpoint);
+      if (batch is List && batch.isNotEmpty) {
+        for (final row in batch) {
+          if (row is Map) {
+            final q = _mapToQuestion(Map<String, dynamic>.from(row));
+            if (seenIds.add(q.id)) {
+              collected.add(q);
+            }
+          }
+        }
+        if (batch.length < batchLimit) {
+          hasMore = false;
+        } else {
+          offset += batchLimit;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+
+    return collected;
+  }
+
+  /// Alias for backward compatibility
+  Future<List<Question>> fetchQuestionsForTest(String testId) async {
+    return await fetchAllQuestionsForTest(testId);
+  }
+
+  /// 3. Fetch Real-time MCQ Counts grouped by Topic ID & Subject
+  Future<Map<String, int>> fetchTopicMcqCounts() async {
+    final Map<String, int> counts = {};
+    const int batchLimit = 1000;
+    int offset = 0;
+    bool hasMore = true;
+
+    while (hasMore) {
+      final batch = await _restGet(
+          'questions?select=id,topic_id,subject&limit=$batchLimit&offset=$offset');
+      if (batch is List && batch.isNotEmpty) {
+        for (final item in batch) {
+          final topicId = item['topic_id']?.toString();
+          final subject = item['subject']?.toString();
+          if (topicId != null && topicId.isNotEmpty) {
+            counts[topicId] = (counts[topicId] ?? 0) + 1;
+          }
+          if (subject != null && subject.isNotEmpty) {
+            counts[subject] = (counts[subject] ?? 0) + 1;
+          }
+        }
+        if (batch.length < batchLimit) {
+          hasMore = false;
+        } else {
+          offset += batchLimit;
+        }
+      } else {
+        hasMore = false;
+      }
+    }
+    return counts;
+  }
+
+  /// 4. Fetch DYNAMIC Syllabus & Topics directly from Supabase (ZERO hardcoded topics!)
+  Future<List<SyllabusSubject>> fetchSyllabusWithTopics({String? examId}) async {
+    String endpoint = 'syllabus?select=*,syllabus_topics(*)&order=created_at.asc';
+    if (examId != null && examId.isNotEmpty) {
+      endpoint = 'syllabus?exam_id=eq.$examId&select=*,syllabus_topics(*)&order=created_at.asc';
+    }
+
+    final dynamic result = await _restGet(endpoint);
+    final counts = await fetchTopicMcqCounts();
+
+    if (result is List && result.isNotEmpty) {
+      return result.map<SyllabusSubject>((item) {
+        final List<SyllabusTopic> parsedTopics = [];
+
+        // Parse from joined `syllabus_topics` table
+        final rawTopics = item['syllabus_topics'];
+        if (rawTopics is List) {
+          for (final t in rawTopics) {
+            final topicId = t['id']?.toString() ?? '';
+            final gujTitle = t['title_gujarati']?.toString() ?? t['title']?.toString() ?? '';
+            final engTitle = t['title']?.toString() ?? gujTitle;
+            final count = counts[topicId] ?? counts[gujTitle] ?? 0;
+
+            parsedTopics.add(SyllabusTopic(
+              id: topicId,
+              name: engTitle,
+              nameGujarati: gujTitle,
+              syllabusId: t['syllabus_id']?.toString(),
+              paperPart: t['paper_part']?.toString(),
+              keyPoints: [],
+              mcqCount: count,
+            ));
+          }
+        }
+
+        final subjectGujarati = item['title_gujarati']?.toString() ?? item['title']?.toString() ?? '';
+        final subjectId = item['id']?.toString() ?? '';
+        final totalSubjMcqs = counts[subjectId] ?? counts[subjectGujarati] ?? 0;
+
+        return SyllabusSubject(
+          id: subjectId,
+          title: item['title']?.toString() ?? '',
+          titleGujarati: subjectGujarati,
+          iconName: item['icon_name']?.toString() ?? 'menu_book',
+          totalMarksWeightage: (item['total_marks_weightage'] as num?)?.toInt() ?? 10,
+          examId: item['exam_id']?.toString() ?? 'constable',
+          dynamicMcqCount: totalSubjMcqs,
+          topics: parsedTopics,
+        );
+      }).toList();
+    }
+    return [];
+  }
+
+  /// 5. Fetch MCQs specifically belonging to a Syllabus Topic for interactive practice
+  Future<List<Question>> fetchQuestionsForTopic(String topicId, String subjectGujarati) async {
+    final List<Question> questions = [];
+    final Set<String> seenIds = {};
+
+    // Match by topic_id or matching subject text
+    final endpoint = 'questions?topic_id=eq.$topicId&select=*&limit=500';
+    final result = await _restGet(endpoint);
+    if (result is List && result.isNotEmpty) {
+      for (final item in result) {
+        final q = _mapToQuestion(Map<String, dynamic>.from(item));
+        if (seenIds.add(q.id)) {
+          questions.add(q);
+        }
+      }
+    }
+
+    if (questions.isEmpty && subjectGujarati.isNotEmpty) {
+      final fallbackEndpoint = 'questions?subject=ilike.%$subjectGujarati%&select=*&limit=500';
+      final fbResult = await _restGet(fallbackEndpoint);
+      if (fbResult is List && fbResult.isNotEmpty) {
+        for (final item in fbResult) {
+          final q = _mapToQuestion(Map<String, dynamic>.from(item));
+          if (seenIds.add(q.id)) {
+            questions.add(q);
+          }
+        }
+      }
+    }
+
+    return questions;
   }
 
   /// Fetch dynamic social & website links from app_settings

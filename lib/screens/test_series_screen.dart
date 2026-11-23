@@ -19,6 +19,8 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
   final _user = UserModel();
   late String _selectedExamId;
 
+  bool _isLoadingTests = false;
+
   @override
   void initState() {
     super.initState();
@@ -27,11 +29,15 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
   }
 
   void _syncTestsFromSupabase() async {
-    final tests = CuratedQuestionBank.getCuratedTests(_selectedExamId);
-    for (final t in tests) {
-      await CuratedQuestionBank.loadQuestionsFromSupabase(t.id);
+    setState(() => _isLoadingTests = true);
+    final tests = await CuratedQuestionBank.loadAllTestsFromSupabase(examId: _selectedExamId);
+    if (tests.isNotEmpty) {
+      // Pre-fetch questions for the first test so it opens instantaneously
+      await CuratedQuestionBank.loadQuestionsFromSupabase(tests.first.id);
     }
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() => _isLoadingTests = false);
+    }
   }
 
   void _showUnlockDialog(MockTest test, int testIndex) {
@@ -137,15 +143,44 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
     }
   }
 
-  void _startTest(MockTest test) {
+  void _startTest(MockTest test) async {
     if (test.questions.isEmpty) {
-      _showEmptyTestDialog(test);
-      return;
+      // Show loading indicator while fetching questions from Supabase
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF0D253F)),
+                  SizedBox(height: 14),
+                  Text('Supabase માંથી તમામ MCQs લોડ થઈ રહ્યા છે...', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final loaded = await CuratedQuestionBank.loadQuestionsFromSupabase(test.id);
+      if (mounted) Navigator.pop(context); // pop loading dialog
+
+      if (loaded.isEmpty) {
+        if (mounted) _showEmptyTestDialog(test);
+        return;
+      }
     }
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => QuizScreen(test: test)),
-    );
+
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => QuizScreen(test: test)),
+      );
+    }
   }
 
   void _showEmptyTestDialog(MockTest test) {
@@ -265,119 +300,141 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
             ),
           ),
 
-          // Clean Curated Mock Test List
+          // Clean Curated Mock Test List with Pull-to-Refresh
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: tests.length,
-              itemBuilder: (context, index) {
-                final test = tests[index];
-                final testNum = index + 1;
-                final isUnlocked = _user.isTestUnlocked(test.id, testNum);
-                final isFree = testNum <= 3;
-
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 1.5,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: RefreshIndicator(
+              onRefresh: () async => _syncTestsFromSupabase(),
+              color: const Color(0xFF0D253F),
+              child: tests.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: isFree
-                                    ? const Color(0xFFE8F5E9)
-                                    : (isUnlocked ? const Color(0xFFE3F2FD) : const Color(0xFFFFF3E0)),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                isFree ? '🌟 મફત ટેસ્ટ (Free)' : (isUnlocked ? '✅ અનલોક થયેલ' : '🔒 પ્રીમિયમ'),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: isFree
-                                      ? const Color(0xFF2E7D32)
-                                      : (isUnlocked ? const Color(0xFF1565C0) : const Color(0xFFE65100)),
-                                ),
-                              ),
-                            ),
-                            Row(
-                              children: const [
-                                Icon(Icons.timer_outlined, size: 14, color: Colors.grey),
-                                SizedBox(width: 4),
-                                Text('180 મિનિટ (3 કલાક)', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                              ],
+                            const CircularProgressIndicator(color: Color(0xFF0D253F)),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Supabase માંથી મોક ટેસ્ટ લોડ થઈ રહી છે...',
+                              style: TextStyle(color: Colors.grey[700], fontSize: 13),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 10),
+                      ),
+                    )
+                  : ListView.builder(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(16),
+                      itemCount: tests.length,
+                      itemBuilder: (context, index) {
+                        final test = tests[index];
+                        final testNum = index + 1;
+                        final isFree = test.isFree || testNum <= 3;
+                        final isUnlocked = isFree || _user.isTestUnlocked(test.id, testNum);
 
-                        Text(
-                          test.title,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF0D253F),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          test.description,
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                        ),
-                        const Divider(height: 22),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 1.5,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.format_list_numbered, size: 16, color: Color(0xFF0D253F)),
-                                const SizedBox(width: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: isFree
+                                            ? const Color(0xFFE8F5E9)
+                                            : (isUnlocked ? const Color(0xFFE3F2FD) : const Color(0xFFFFF3E0)),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        isFree ? '🌟 મફત ટેસ્ટ (Free)' : (isUnlocked ? '✅ અનલોક થયેલ' : '🔒 પ્રીમિયમ'),
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.bold,
+                                          color: isFree
+                                              ? const Color(0xFF2E7D32)
+                                              : (isUnlocked ? const Color(0xFF1565C0) : const Color(0xFFE65100)),
+                                        ),
+                                      ),
+                                    ),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.timer_outlined, size: 14, color: Colors.grey),
+                                        const SizedBox(width: 4),
+                                        Text('${test.durationMinutes} મિનિટ', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+
                                 Text(
-                                  test.questions.isEmpty
-                                      ? '0 પ્રશ્નો (ટૂંક સમયમાં)'
-                                      : '${test.questions.length} MCQs • ${test.questions.length} ગુણ',
-                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
+                                  test.title,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF0D253F),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  test.description,
+                                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                ),
+                                const Divider(height: 22),
+
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.format_list_numbered, size: 16, color: Color(0xFF0D253F)),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          test.questions.isNotEmpty
+                                              ? '${test.questions.length} MCQs • ${test.questions.length} ગુણ'
+                                              : '${test.totalQuestions} MCQs (લાઇવ ડેટાબેઝ)',
+                                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
+                                        ),
+                                      ],
+                                    ),
+                                    ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: isUnlocked ? const Color(0xFF0D253F) : const Color(0xFFE65100),
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                                      ),
+                                      icon: Icon(
+                                        isUnlocked ? Icons.play_arrow : Icons.lock_open,
+                                        size: 16,
+                                      ),
+                                      label: Text(
+                                        isUnlocked ? 'ટેસ્ટ આપો' : 'અનલોક કરો',
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      onPressed: () {
+                                        if (isUnlocked) {
+                                          _startTest(test);
+                                        } else {
+                                          _showUnlockDialog(test, testNum);
+                                        }
+                                      },
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: isUnlocked ? const Color(0xFF0D253F) : const Color(0xFFE65100),
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                              ),
-                              icon: Icon(
-                                isUnlocked ? Icons.play_arrow : Icons.lock_open,
-                                size: 16,
-                              ),
-                              label: Text(
-                                isUnlocked ? 'ટેસ્ટ આપો' : 'અનલોક કરો',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                              onPressed: () {
-                                if (isUnlocked) {
-                                  _startTest(test);
-                                } else {
-                                  _showUnlockDialog(test, testNum);
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                );
-              },
             ),
           ),
         ],
@@ -391,7 +448,12 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
     required bool isSelected,
   }) {
     return GestureDetector(
-      onTap: () => setState(() => _selectedExamId = examId),
+      onTap: () {
+        if (_selectedExamId != examId) {
+          setState(() => _selectedExamId = examId);
+          _syncTestsFromSupabase();
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(

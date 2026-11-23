@@ -1,17 +1,19 @@
-import '../data/curated_question_bank.dart';
-
 class SyllabusTopic {
   final String id;
   final String name;
   final String nameGujarati;
+  final String? syllabusId;
+  final String? paperPart;
   final List<String> keyPoints;
-  final int mcqCount;
+  int mcqCount;
   bool isCompleted;
 
   SyllabusTopic({
     required this.id,
     required this.name,
     required this.nameGujarati,
+    this.syllabusId,
+    this.paperPart,
     required this.keyPoints,
     this.mcqCount = 0,
     this.isCompleted = false,
@@ -24,7 +26,8 @@ class SyllabusSubject {
   final String titleGujarati;
   final String iconName;
   final int totalMarksWeightage;
-  final int _mcqCount;
+  final String examId;
+  int dynamicMcqCount;
   final List<SyllabusTopic> topics;
 
   SyllabusSubject({
@@ -33,14 +36,19 @@ class SyllabusSubject {
     required this.titleGujarati,
     required this.iconName,
     required this.totalMarksWeightage,
-    int mcqCount = 0,
+    this.examId = 'constable',
+    this.dynamicMcqCount = 0,
     required this.topics,
-  }) : _mcqCount = mcqCount;
+  });
 
-  /// Dynamic MCQ count strictly calculated from actual database questions
+  /// Dynamic MCQ count calculated from topics or actual database questions
   int get mcqCount {
-    final realCount = CuratedQuestionBank.getQuestionCountForSubject(titleGujarati);
-    return realCount;
+    if (dynamicMcqCount > 0) return dynamicMcqCount;
+    int sum = 0;
+    for (final t in topics) {
+      sum += t.mcqCount;
+    }
+    return sum;
   }
 
   int get completedTopicsCount =>

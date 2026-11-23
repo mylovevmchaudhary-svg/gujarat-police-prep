@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../data/syllabus_data.dart';
 import '../models/exam_type.dart';
 import 'home_screen.dart';
 import 'profile_screen.dart';
@@ -35,9 +34,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final screens = [
       HomeScreen(onTabChange: _onTabTapped),
       const TestSeriesScreen(),
-      SyllabusScreen(
+      const SyllabusScreen(
         examType: ExamType.constable,
-        subjects: SyllabusData.getSyllabus(ExamType.constable),
       ),
       const WalletScreen(),
       const ProfileScreen(),

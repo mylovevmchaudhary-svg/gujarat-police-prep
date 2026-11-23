@@ -111,6 +111,139 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
+  void _openCreateTestDialog() {
+    final titleCtrl = TextEditingController(text: 'મોક ટેસ્ટ ${_adminData.tests.length + 1}');
+    final descCtrl = TextEditingController(text: 'સંપૂર્ણ 200 ગુણનું નવું પેપર');
+    final durationCtrl = TextEditingController(text: '180');
+    final totalQCtrl = TextEditingController(text: '200');
+    String selectedExam = 'constable';
+    bool isFreeTest = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.post_add, color: Color(0xFF0D253F)),
+              SizedBox(width: 8),
+              Text('નવો મોક ટેસ્ટ બનાવો', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedExam,
+                  decoration: const InputDecoration(labelText: 'પરીક્ષા (Exam)', border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'constable', child: Text('કોન્સ્ટેબલ (LRD)')),
+                    DropdownMenuItem(value: 'psi', child: Text('PSI / ASI')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() {
+                        selectedExam = val;
+                        final count = _adminData.tests.where((t) => t['exam_id'] == val).length + 1;
+                        titleCtrl.text = val == 'psi' ? 'PSI પ્રિલિમિનરી 0$count' : 'મોક ટેસ્ટ 0$count';
+                      });
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(labelText: 'ટેસ્ટ શીર્ષક (Title)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  decoration: const InputDecoration(labelText: 'વર્ણન (Description)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: totalQCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'કુલ પ્રશ્નો', border: OutlineInputBorder()),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: TextField(
+                        controller: durationCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(labelText: 'સમય (મિનિટ)', border: OutlineInputBorder()),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('ફ્રી ટેસ્ટ (Free for all)?', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  value: isFreeTest,
+                  onChanged: (v) => setDialogState(() => isFreeTest = v),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('રદ'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D253F), foregroundColor: Colors.white),
+              onPressed: () async {
+                final title = titleCtrl.text.trim();
+                if (title.isEmpty) return;
+                final totalQ = int.tryParse(totalQCtrl.text.trim()) ?? 200;
+                final duration = int.tryParse(durationCtrl.text.trim()) ?? 180;
+
+                final existingExamTests = _adminData.tests.where((t) => t['exam_id'] == selectedExam).length;
+                final testId = '${selectedExam}_${existingExamTests + 1}';
+
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('નવો મોક ટેસ્ટ Supabase માં સેવ થઈ રહ્યો છે...')),
+                );
+
+                final ok = await _adminData.createMockTest(
+                  id: testId,
+                  examId: selectedExam,
+                  title: title,
+                  description: descCtrl.text.trim(),
+                  isFree: isFreeTest,
+                  durationMinutes: duration,
+                  totalQuestions: totalQ,
+                );
+
+                if (ok && mounted) {
+                  setState(() {
+                    _selectedTestId = testId;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      content: Text('$title સફળતાપૂર્વક તૈયાર થયો! 🎉 (Supabase લાઈવ સેવ)'),
+                    ),
+                  );
+                }
+              },
+              child: const Text('ટેસ્ટ બનાવો (Create)'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _openAddQuestionDialog({Map<String, dynamic>? editQuestion, int? editIndex}) {
     final qCtrl = TextEditingController(text: editQuestion?['question'] ?? '');
     final optACtrl = TextEditingController(text: editQuestion?['optionA'] ?? '');
@@ -546,11 +679,28 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // TAB 2: QUESTIONS & MOCK TESTS MANAGER
+  // TAB 2: QUESTIONS & MOCK TESTS MANAGER (DYNAMIC 1-100+ TESTS, 200+ MCQS)
   Widget _buildQuestionsManagerTab() {
+    if (_adminData.tests.isNotEmpty && !_adminData.tests.any((t) => t['id'] == _selectedTestId)) {
+      _selectedTestId = _adminData.tests.first['id'] as String;
+    }
+
     final questions = _adminData.testQuestions[_selectedTestId] ?? [];
-    final selectedTest = _adminData.tests.firstWhere((t) => t['id'] == _selectedTestId);
-    final isFree = selectedTest['isFree'] as bool;
+    final selectedTest = _adminData.tests.firstWhere(
+      (t) => t['id'] == _selectedTestId,
+      orElse: () => _adminData.tests.isNotEmpty
+          ? _adminData.tests.first
+          : {
+              'id': _selectedTestId,
+              'exam': 'કોન્સ્ટેબલ (LRD)',
+              'exam_id': 'constable',
+              'title': 'મોક ટેસ્ટ 01',
+              'isFree': true,
+              'totalMcqs': 200,
+              'duration': 180,
+            },
+    );
+    final isFree = (selectedTest['isFree'] as bool?) ?? true;
 
     final filteredQuestions = questions.where((q) {
       if (_questionSearch.isEmpty) return true;
@@ -562,7 +712,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
     return Column(
       children: [
-        // Test Switcher & Free/Lock Toggle
+        // Test Switcher, Create Test & Free/Lock Toggle
         Container(
           color: Colors.white,
           padding: const EdgeInsets.all(12),
@@ -573,23 +723,60 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedTestId,
-                      decoration: const InputDecoration(labelText: 'ટેસ્ટ પસંદ કરો', contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 4), border: OutlineInputBorder()),
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: 'ટેસ્ટ પસંદ કરો (${_adminData.tests.length} ઉપલબ્ધ)',
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        border: const OutlineInputBorder(),
+                      ),
                       items: _adminData.tests.map((t) {
-                        return DropdownMenuItem(value: t['id'] as String, child: Text('${t['exam']} - ${t['title']}'));
+                        final testId = t['id'] as String;
+                        final count = _adminData.testQuestions[testId]?.length ?? 0;
+                        return DropdownMenuItem(
+                          value: testId,
+                          child: Text(
+                            '${t['exam']} - ${t['title']} ($count MCQs)',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        );
                       }).toList(),
-                      onChanged: (val) => setState(() => _selectedTestId = val!),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() => _selectedTestId = val);
+                        }
+                      },
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    style: IconButton.styleFrom(
+                      backgroundColor: const Color(0xFF0D253F),
+                      foregroundColor: const Color(0xFFFFC107),
+                    ),
+                    icon: const Icon(Icons.add_box, size: 22),
+                    tooltip: 'નવો મોક ટેસ્ટ બનાવો (Create Mock Test 6, 7..100)',
+                    onPressed: _openCreateTestDialog,
+                  ),
+                  const SizedBox(width: 6),
                   Column(
                     children: [
-                      Text(isFree ? 'FREE' : 'LOCKED', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isFree ? Colors.green : Colors.orange)),
+                      Text(
+                        isFree ? 'FREE' : 'LOCKED',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: isFree ? Colors.green : Colors.orange,
+                        ),
+                      ),
                       Switch(
                         value: isFree,
                         activeColor: Colors.green,
                         onChanged: (v) {
                           final idx = _adminData.tests.indexWhere((t) => t['id'] == _selectedTestId);
-                          setState(() => _adminData.toggleTestFree(idx));
+                          if (idx >= 0) {
+                            setState(() => _adminData.toggleTestFree(idx));
+                          }
                         },
                       ),
                     ],
@@ -597,23 +784,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 ],
               ),
               const SizedBox(height: 8),
+              // Search & Add Actions
               Row(
                 children: [
                   Expanded(
-                    child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0D253F), foregroundColor: Colors.white),
-                      icon: const Icon(Icons.add, size: 16, color: Color(0xFFFFC107)),
-                      label: const Text('નવો પ્રશ્ન ઉમેરો', style: TextStyle(fontSize: 12)),
-                      onPressed: () => _openAddQuestionDialog(),
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'આ ટેસ્ટના પ્રશ્નો શોધો (${questions.length} MCQs)...',
+                        prefixIcon: const Icon(Icons.search, size: 18),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onChanged: (val) => setState(() => _questionSearch = val),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.upload_file, size: 16),
-                      label: const Text('Excel/CSV અપલોડ', style: TextStyle(fontSize: 12)),
-                      onPressed: () => _showBulkUploadDialog(),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0D253F),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     ),
+                    icon: const Icon(Icons.add, size: 16, color: Color(0xFFFFC107)),
+                    label: const Text('નવો પ્રશ્ન', style: TextStyle(fontSize: 11)),
+                    onPressed: () => _openAddQuestionDialog(),
+                  ),
+                  const SizedBox(width: 6),
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    ),
+                    onPressed: () => _showBulkUploadDialog(),
+                    child: const Icon(Icons.upload_file, size: 18),
                   ),
                 ],
               ),
@@ -630,7 +833,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     children: [
                       const Icon(Icons.quiz_outlined, size: 48, color: Colors.grey),
                       const SizedBox(height: 8),
-                      Text('આ ટેસ્ટમાં કોઈ પ્રશ્નો નથી. "નવો પ્રશ્ન ઉમેરો" બટન દબાવો.', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                      Text(
+                        _questionSearch.isNotEmpty
+                            ? 'શોધ પરિણામ મળ્યું નથી.'
+                            : 'આ ટેસ્ટમાં હજુ કોઈ પ્રશ્ન નથી. "નવો પ્રશ્ન" બટન દબાવો.',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
                     ],
                   ),
                 )

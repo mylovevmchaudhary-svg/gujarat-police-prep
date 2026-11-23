@@ -72,22 +72,22 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v3.7.0-latest
-          name: "PSI Mock Test & Admin Console v3.7.0 (Military-Grade Cryptographic Vault & Obfuscation)"
+          tag_name: v3.8.0-latest
+          name: "PSI Mock Test & Admin Console v3.8.0 (Permanent Dynamic Supabase Sync - 200+ MCQs, Tests 1-100+, Live Syllabus)"
           body: |
-            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.7.0
+            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.8.0
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.7.0-latest/PSI_Mock_Test_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.7.0-latest/PSI_Mock_Test_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.7.0-latest/PSI_Mock_Test_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.8.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.8.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.8.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### 🛡️ What's New in v3.7.0 (Security & Anti-Hacking Hardening):
-            - 🔐 **Military-Grade Cryptographic Vault:** Zero plain-text Supabase Project URL or Anon API Key in the code or compiled binaries. All credentials are encrypted with rotating multi-byte XOR-256 ciphers and dynamically descrambled in RAM only.
-            - 🔒 **Salted SHA-256 One-Way Admin Authentication:** The admin password is never stored or compared in plain text. Login uses one-way cryptographic SHA-256 hashing with secret cryptographic salt. Even if a hacker decompiles the APK, they cannot extract or reverse the admin password.
-            - 🛡️ **UI Key Masking & Complete Protection:** Removed all exposed API key and URL display cards from the Admin Console UI. Replaced with an active Encrypted Cloud Vault status badge.
-            - 🌀 **Dart AOT Code Obfuscation (`--obfuscate`):** Both Student and Admin apps are compiled with Flutter release code obfuscation and split debug symbols, stripping class names, method signatures, and field identifiers.
-            - 🚫 **100% Zero Dummy Data:** Live connection to Supabase cloud tables (`profiles`, `withdrawals`, `questions`, `app_settings`, `notifications`).
+            ### 🚀 What's New in v3.8.0 (Permanent Supabase Dynamic Sync):
+            - 🧠 **Dynamic MCQ System (200 to 10,000+ MCQs):** Full paginated batch streaming from `mock_test_questions` joined with `questions`. Constable Mock Test 1 immediately loads all 200 real MCQs with options, Gujarati explanations, and proper answers without any 1,000-row Supabase limit.
+            - 📝 **Dynamic Mock Tests (Tests 1 to 100+):** Zero hardcoded tests. Any test added via ChatGPT or SQL immediately displays across both Student and Admin apps. Dedicated Admin dialog to create Mock Test 6, 7, 8... 100 on the fly.
+            - 📚 **100% Dynamic Syllabus & Topics:** Switched completely from static hardcoded files to Supabase `syllabus` and `syllabus_topics` (151 real topics). Topic-specific MCQ counts and practice sessions are dynamically queried from live database questions.
+            - 🔄 **Zero Manual App Updates Required:** Supabase is now the absolute Single Source of Truth. Changes to questions, mock tests, and syllabus appear instantly in the app via pull-to-refresh without re-compiling or updating APKs.
+            - 🔐 **Military-Grade Cryptographic Vault & Obfuscation:** XOR-256 encrypted credentials, salted SHA-256 admin authentication, and Flutter AOT release obfuscation.
           files: |
             build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk

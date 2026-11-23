@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import '../data/curated_question_bank.dart';
-import '../data/syllabus_data.dart';
 import '../models/exam_type.dart';
 import '../models/quiz_model.dart';
 import '../models/syllabus_model.dart';
+import '../services/supabase_service.dart';
 import 'quiz_screen.dart';
 
 class SyllabusScreen extends StatefulWidget {
@@ -24,35 +23,70 @@ class SyllabusScreen extends StatefulWidget {
 
 class _SyllabusScreenState extends State<SyllabusScreen> {
   late ExamType _selectedExam;
-  late List<SyllabusSubject> _currentSubjects;
+  List<SyllabusSubject> _currentSubjects = [];
+  bool _isLoading = true;
   String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _selectedExam = widget.examType ?? ExamType.constable;
-    _currentSubjects = widget.subjects ?? SyllabusData.getSyllabus(_selectedExam);
+    if (widget.subjects != null) {
+      _currentSubjects = widget.subjects!;
+      _isLoading = false;
+    } else {
+      _loadSyllabusFromSupabase();
+    }
+  }
+
+  void _loadSyllabusFromSupabase() async {
+    setState(() => _isLoading = true);
+    final examStr = _selectedExam == ExamType.psi ? 'psi' : 'constable';
+    final liveSubjects = await SupabaseService().fetchSyllabusWithTopics(examId: examStr);
+    if (mounted) {
+      setState(() {
+        _currentSubjects = liveSubjects;
+        _isLoading = false;
+      });
+    }
   }
 
   void _onExamChanged(ExamType newExam) {
     setState(() {
       _selectedExam = newExam;
-      _currentSubjects = SyllabusData.getSyllabus(newExam);
     });
+    _loadSyllabusFromSupabase();
   }
 
-  void _startTopicPractice(SyllabusTopic topic) {
-    final tests = CuratedQuestionBank.getCuratedTests(
-      _selectedExam == ExamType.psi ? 'psi' : 'constable',
+  void _startTopicPractice(SyllabusTopic topic) async {
+    // Show quick loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: Card(
+          child: Padding(
+            padding: EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: Color(0xFF0D253F)),
+                SizedBox(height: 14),
+                Text('ટોપિક આધારિત પ્રશ્નો લોડ થઈ રહ્યા છે...', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
-    List<Question> matchingQuestions = [];
-    for (final t in tests) {
-      matchingQuestions.addAll(t.questions.where((q) =>
-          q.subject.toLowerCase().contains(topic.nameGujarati.toLowerCase()) ||
-          q.questionText.toLowerCase().contains(topic.nameGujarati.toLowerCase())));
-    }
+
+    final matchingQuestions =
+        await SupabaseService().fetchQuestionsForTopic(topic.id, topic.nameGujarati);
+
+    if (mounted) Navigator.pop(context); // pop loading
 
     if (matchingQuestions.isEmpty) {
+      if (!mounted) return;
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -89,14 +123,16 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
       title: '${topic.nameGujarati} - પ્રેક્ટિસ',
       description: 'ટોપિક આધારિત મોક ટેસ્ટ',
       category: 'Practice',
-      durationMinutes: 45,
+      durationMinutes: (matchingQuestions.length * 1.5).ceil().clamp(15, 120),
       questions: matchingQuestions,
     );
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => QuizScreen(test: baseTest)),
-    );
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => QuizScreen(test: baseTest)),
+      );
+    }
   }
 
   @override
@@ -228,16 +264,45 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
             ),
           ),
 
-          // Subject List with Topic & MCQ Counts
+          // Subject List with Topic & MCQ Counts with Pull-to-Refresh
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-              itemCount: filteredSubjects.length,
-              itemBuilder: (context, index) {
-                final subject = filteredSubjects[index];
-                return _buildSubjectCard(subject);
-              },
-            ),
+            child: _isLoading
+                ? const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(color: Color(0xFF0D253F)),
+                        SizedBox(height: 16),
+                        Text(
+                          'Supabase માંથી સિલેબસ અને ટોપિક્સ લોડ થઈ રહ્યા છે...',
+                          style: TextStyle(color: Colors.grey, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    onRefresh: () async => _loadSyllabusFromSupabase(),
+                    color: const Color(0xFF0D253F),
+                    child: filteredSubjects.isEmpty
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32),
+                              child: Text(
+                                'કોઈ વિષય કે ટોપિક મળ્યો નથી.',
+                                style: TextStyle(color: Colors.grey, fontSize: 13),
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                            itemCount: filteredSubjects.length,
+                            itemBuilder: (context, index) {
+                              final subject = filteredSubjects[index];
+                              return _buildSubjectCard(subject);
+                            },
+                          ),
+                  ),
           ),
         ],
       ),

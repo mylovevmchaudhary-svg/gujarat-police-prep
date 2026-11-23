@@ -15,21 +15,11 @@ class AdminDataManager {
   bool isConnectedToSupabase = true;
   bool isLoading = false;
 
-  // Active Mock Tests list
-  final List<Map<String, dynamic>> tests = [
-    {'id': 'constable_1', 'exam': 'કોન્સ્ટેબલ (LRD)', 'title': 'મોક ટેસ્ટ 01', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-    {'id': 'constable_2', 'exam': 'કોન્સ્ટેબલ (LRD)', 'title': 'મોક ટેસ્ટ 02', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-    {'id': 'constable_3', 'exam': 'કોન્સ્ટેબલ (LRD)', 'title': 'મોક ટેસ્ટ 03', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-    {'id': 'constable_4', 'exam': 'કોન્સ્ટેબલ (LRD)', 'title': 'મોક ટેસ્ટ 04', 'isFree': false, 'totalMcqs': 200, 'duration': 180},
-    {'id': 'constable_5', 'exam': 'કોન્સ્ટેબલ (LRD)', 'title': 'મોક ટેસ્ટ 05', 'isFree': false, 'totalMcqs': 200, 'duration': 180},
-    {'id': 'psi_1', 'exam': 'PSI / ASI', 'title': 'PSI પ્રિલિમિનરી ટેસ્ટ 01', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-    {'id': 'psi_2', 'exam': 'PSI / ASI', 'title': 'PSI કાયદો & બંધારણ ટેસ્ટ 02', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-    {'id': 'psi_3', 'exam': 'PSI / ASI', 'title': 'PSI ભાષાકીય ટેસ્ટ 03', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-    {'id': 'psi_4', 'exam': 'PSI / ASI', 'title': 'PSI પ્રીમિયમ ટેસ્ટ 04', 'isFree': false, 'totalMcqs': 200, 'duration': 180},
-  ];
+  // Active Mock Tests list - 100% DYNAMIC from Supabase `mock_tests` table!
+  final List<Map<String, dynamic>> tests = [];
 
   // Dynamic Question Bank per Test - 100% REAL from Supabase / Admin additions
-  late final Map<String, List<Map<String, dynamic>>> testQuestions;
+  final Map<String, List<Map<String, dynamic>>> testQuestions = {};
 
   // Real Registered Students List - 100% database driven from Supabase `profiles`
   final List<Map<String, dynamic>> students = [];
@@ -47,17 +37,7 @@ class AdminDataManager {
   };
 
   void _initEmptyQuestions() {
-    testQuestions = {
-      'constable_1': [],
-      'constable_2': [],
-      'constable_3': [],
-      'constable_4': [],
-      'constable_5': [],
-      'psi_1': [],
-      'psi_2': [],
-      'psi_3': [],
-      'psi_4': [],
-    };
+    testQuestions['constable_1'] = [];
   }
 
   // Generic REST GET
@@ -65,7 +45,7 @@ class AdminDataManager {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
+      client.connectionTimeout = const Duration(seconds: 7);
       final req = await client.getUrl(uri);
       req.headers.set('apikey', supabaseKey);
       req.headers.set('Authorization', 'Bearer $supabaseKey');
@@ -85,12 +65,12 @@ class AdminDataManager {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
+      client.connectionTimeout = const Duration(seconds: 7);
       final req = await client.postUrl(uri);
       req.headers.set('apikey', supabaseKey);
       req.headers.set('Authorization', 'Bearer $supabaseKey');
       req.headers.set('Content-Type', 'application/json');
-      req.headers.set('Prefer', 'return=minimal');
+      req.headers.set('Prefer', 'return=representation');
 
       req.write(jsonEncode(data));
       final res = await req.close();
@@ -105,7 +85,7 @@ class AdminDataManager {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
+      client.connectionTimeout = const Duration(seconds: 7);
       final req = await client.patchUrl(uri);
       req.headers.set('apikey', supabaseKey);
       req.headers.set('Authorization', 'Bearer $supabaseKey');
@@ -125,7 +105,7 @@ class AdminDataManager {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
+      client.connectionTimeout = const Duration(seconds: 7);
       final req = await client.deleteUrl(uri);
       req.headers.set('apikey', supabaseKey);
       req.headers.set('Authorization', 'Bearer $supabaseKey');
@@ -136,12 +116,40 @@ class AdminDataManager {
     }
   }
 
-  // Backwards compatibility alias
-  Future<void> postToSupabase(String endpoint, Map<String, dynamic> data) async {
-    await restPost(endpoint, data);
+  /// 1. Fetch Real Mock Tests from Supabase (Supports Mock Tests 1 to 100+ dynamically!)
+  Future<void> fetchRealMockTests() async {
+    final result = await restGet('mock_tests?select=*&order=created_at.asc');
+    if (result is List && result.isNotEmpty) {
+      tests.clear();
+      for (final item in result) {
+        final examId = item['exam_id']?.toString() ?? 'constable';
+        final testId = item['id']?.toString() ?? '';
+        tests.add({
+          'id': testId,
+          'exam': examId == 'psi' ? 'PSI / ASI' : 'કોન્સ્ટેબલ (LRD)',
+          'exam_id': examId,
+          'title': item['title']?.toString() ?? 'મોક ટેસ્ટ',
+          'description': item['description']?.toString() ?? '',
+          'isFree': item['is_free'] == true,
+          'totalMcqs': (item['total_questions'] as num?)?.toInt() ?? 200,
+          'duration': (item['duration_minutes'] as num?)?.toInt() ?? 180,
+        });
+
+        if (!testQuestions.containsKey(testId)) {
+          testQuestions[testId] = [];
+        }
+      }
+    } else if (tests.isEmpty) {
+      // Fallback defaults if database connection is cold
+      tests.addAll([
+        {'id': 'constable_1', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'મોક ટેસ્ટ 01', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
+        {'id': 'constable_2', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'મોક ટેસ્ટ 02', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
+        {'id': 'psi_1', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI પ્રિલિમિનરી 01', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
+      ]);
+    }
   }
 
-  /// 1. Fetch Real Students from Supabase `profiles` table
+  /// 2. Fetch Real Students from Supabase `profiles` table
   Future<void> fetchRealStudents() async {
     final result = await restGet('profiles?select=*&order=created_at.desc');
     if (result is List) {
@@ -167,7 +175,7 @@ class AdminDataManager {
     }
   }
 
-  /// 2. Fetch Real Withdrawals from Supabase `withdrawals` table
+  /// 3. Fetch Real Withdrawals from Supabase `withdrawals` table
   Future<void> fetchRealWithdrawals() async {
     final result = await restGet('withdrawals?select=*&order=created_at.desc');
     if (result is List) {
@@ -200,51 +208,117 @@ class AdminDataManager {
     }
   }
 
-  /// 3. Fetch Real Questions from Supabase `questions` table
+  /// 4. Fetch Real Questions from Supabase (`mock_test_questions` JOIN & `questions`)
+  /// Correctly handles 200, 500, 1000, 10,000+ MCQs with pagination!
   Future<void> fetchRealQuestions() async {
-    final result = await restGet('questions?select=*&order=created_at.asc');
-    if (result is List) {
-      // Clear questions for each test
-      for (final key in testQuestions.keys) {
-        testQuestions[key]?.clear();
+    // Clear question bank
+    for (final key in testQuestions.keys) {
+      testQuestions[key]?.clear();
+    }
+
+    // A. Fetch via `mock_test_questions` join with `questions`
+    int offset = 0;
+    const int batchLimit = 500;
+    bool hasMore = true;
+
+    while (hasMore) {
+      final batch = await restGet(
+          'mock_test_questions?select=test_id,position,questions(*)&order=position.asc&limit=$batchLimit&offset=$offset');
+      if (batch is List && batch.isNotEmpty) {
+        for (final row in batch) {
+          final testId = row['test_id']?.toString() ?? 'constable_1';
+          final q = row['questions'];
+          if (q is Map) {
+            _addQuestionToTestMap(testId, Map<String, dynamic>.from(q));
+          }
+        }
+        if (batch.length < batchLimit) {
+          hasMore = false;
+        } else {
+          offset += batchLimit;
+        }
+      } else {
+        hasMore = false;
       }
+    }
 
-      for (final item in result) {
-        final testId = item['test_id']?.toString() ?? 'constable_1';
-        if (!testQuestions.containsKey(testId)) {
-          testQuestions[testId] = [];
+    // B. Also fetch from `questions` table for any questions with direct `test_id`
+    offset = 0;
+    hasMore = true;
+    while (hasMore) {
+      final batch = await restGet(
+          'questions?select=*&order=created_at.asc&limit=$batchLimit&offset=$offset');
+      if (batch is List && batch.isNotEmpty) {
+        for (final item in batch) {
+          if (item is Map) {
+            final testId = item['test_id']?.toString();
+            if (testId != null && testId.isNotEmpty) {
+              _addQuestionToTestMap(testId, Map<String, dynamic>.from(item));
+            }
+          }
         }
-
-        final opts = item['options'];
-        List<String> optionsList = [];
-        if (opts is List) {
-          optionsList = opts.map((e) => e.toString()).toList();
+        if (batch.length < batchLimit) {
+          hasMore = false;
+        } else {
+          offset += batchLimit;
         }
-
-        int correctIndex = (item['correct_option_index'] as num?)?.toInt() ?? 0;
-        String correctLetter = 'A';
-        if (correctIndex == 1) correctLetter = 'B';
-        if (correctIndex == 2) correctLetter = 'C';
-        if (correctIndex == 3) correctLetter = 'D';
-        if (correctIndex == 4) correctLetter = 'E';
-
-        testQuestions[testId]?.add({
-          'id': item['id']?.toString() ?? '',
-          'question': item['question_text']?.toString() ?? '',
-          'optionA': optionsList.isNotEmpty ? optionsList[0] : '',
-          'optionB': optionsList.length > 1 ? optionsList[1] : '',
-          'optionC': optionsList.length > 2 ? optionsList[2] : '',
-          'optionD': optionsList.length > 3 ? optionsList[3] : '',
-          'optionE': optionsList.length > 4 ? optionsList[4] : 'પ્રયાસ કરેલ નથી',
-          'correct': correctLetter,
-          'subject': item['subject']?.toString() ?? 'સામાન્ય જ્ઞાન',
-          'explanation': item['explanation']?.toString() ?? '',
-        });
+      } else {
+        hasMore = false;
       }
     }
   }
 
-  /// 4. Fetch Dynamic Social Media & Website Settings
+  void _addQuestionToTestMap(String testId, Map<String, dynamic> item) {
+    if (!testQuestions.containsKey(testId)) {
+      testQuestions[testId] = [];
+    }
+
+    final questionId = item['id']?.toString() ?? '';
+    // Avoid duplicates
+    if (testQuestions[testId]!.any((q) => q['id'] == questionId)) {
+      return;
+    }
+
+    final opts = item['options'];
+    List<String> optionsList = [];
+    if (opts is List) {
+      optionsList = opts.map((e) => e.toString()).toList();
+    }
+
+    int correctIndex = 0;
+    final rawCorrect = item['correct_option_index'];
+    if (rawCorrect is num) {
+      correctIndex = rawCorrect.toInt().clamp(0, 4);
+    } else if (rawCorrect is String) {
+      final s = rawCorrect.trim().toUpperCase();
+      if (s == 'B' || s == '1') correctIndex = 1;
+      if (s == 'C' || s == '2') correctIndex = 2;
+      if (s == 'D' || s == '3') correctIndex = 3;
+      if (s == 'E' || s == '4') correctIndex = 4;
+    }
+
+    String correctLetter = 'A';
+    if (correctIndex == 1) correctLetter = 'B';
+    if (correctIndex == 2) correctLetter = 'C';
+    if (correctIndex == 3) correctLetter = 'D';
+    if (correctIndex == 4) correctLetter = 'E';
+
+    testQuestions[testId]?.add({
+      'id': questionId,
+      'question': item['question_text']?.toString() ?? '',
+      'optionA': optionsList.isNotEmpty ? optionsList[0] : '',
+      'optionB': optionsList.length > 1 ? optionsList[1] : '',
+      'optionC': optionsList.length > 2 ? optionsList[2] : '',
+      'optionD': optionsList.length > 3 ? optionsList[3] : '',
+      'optionE': optionsList.length > 4 ? optionsList[4] : 'પ્રયાસ કરેલ નથી',
+      'correct': correctLetter,
+      'subject': item['subject']?.toString() ?? 'સામાન્ય જ્ઞાન',
+      'explanation': item['explanation']?.toString() ?? '',
+      'topic_id': item['topic_id']?.toString(),
+    });
+  }
+
+  /// 5. Fetch Dynamic Social Media & Website Settings
   Future<void> fetchSocialLinks() async {
     final result = await restGet('app_settings?key=eq.social_links&select=value');
     if (result is List && result.isNotEmpty) {
@@ -259,11 +333,12 @@ class AdminDataManager {
     }
   }
 
-  /// 5. Load All Data from Supabase
+  /// 6. Load All Data from Supabase
   Future<void> loadAllData() async {
     isLoading = true;
     try {
       await Future.wait([
+        fetchRealMockTests(),
         fetchRealStudents(),
         fetchRealWithdrawals(),
         fetchRealQuestions(),
@@ -273,9 +348,54 @@ class AdminDataManager {
     isLoading = false;
   }
 
-  /// Add question and persist to Supabase
-  void addQuestion(String testId, Map<String, dynamic> question) {
-    testQuestions[testId]?.add(question);
+  /// Add new Mock Test dynamically
+  Future<bool> createMockTest({
+    required String id,
+    required String examId,
+    required String title,
+    required String description,
+    required bool isFree,
+    required int durationMinutes,
+    required int totalQuestions,
+  }) async {
+    final success = await restPost('mock_tests', {
+      'id': id,
+      'exam_id': examId,
+      'title': title,
+      'description': description,
+      'is_free': isFree,
+      'duration_minutes': durationMinutes,
+      'total_questions': totalQuestions,
+      'positive_marks': 1.0,
+      'negative_marks': 0.25,
+    });
+
+    if (success) {
+      tests.add({
+        'id': id,
+        'exam': examId == 'psi' ? 'PSI / ASI' : 'કોન્સ્ટેબલ (LRD)',
+        'exam_id': examId,
+        'title': title,
+        'description': description,
+        'isFree': isFree,
+        'totalMcqs': totalQuestions,
+        'duration': durationMinutes,
+      });
+      testQuestions[id] = [];
+    }
+    return success;
+  }
+
+  /// Add question and persist to Supabase `questions` and `mock_test_questions`
+  void addQuestion(String testId, Map<String, dynamic> question) async {
+    final questionId = 'q_${DateTime.now().millisecondsSinceEpoch}';
+    final qMap = Map<String, dynamic>.from(question);
+    qMap['id'] = questionId;
+
+    if (!testQuestions.containsKey(testId)) {
+      testQuestions[testId] = [];
+    }
+    testQuestions[testId]?.add(qMap);
 
     final optionsList = [
       question['optionA'] ?? '',
@@ -290,7 +410,9 @@ class AdminDataManager {
     if (question['correct'] == 'D') correctIdx = 3;
     if (question['correct'] == 'E') correctIdx = 4;
 
-    restPost('questions', {
+    // 1. Insert into questions table
+    await restPost('questions', {
+      'id': questionId,
       'test_id': testId,
       'exam_id': testId.startsWith('psi') ? 'psi' : 'constable',
       'subject': question['subject'] ?? 'સામાન્ય જ્ઞાન',
@@ -298,6 +420,14 @@ class AdminDataManager {
       'options': optionsList,
       'correct_option_index': correctIdx,
       'explanation': question['explanation'] ?? '',
+    });
+
+    // 2. Also map into mock_test_questions
+    final currentPos = (testQuestions[testId]?.length ?? 1);
+    await restPost('mock_test_questions', {
+      'test_id': testId,
+      'question_id': questionId,
+      'position': currentPos,
     });
   }
 
@@ -337,6 +467,7 @@ class AdminDataManager {
       final q = testQuestions[testId]!.removeAt(index);
       final questionId = q['id']?.toString();
       if (questionId != null && questionId.isNotEmpty) {
+        restDelete('mock_test_questions?question_id=eq.$questionId');
         restDelete('questions?id=eq.$questionId');
       }
     }
