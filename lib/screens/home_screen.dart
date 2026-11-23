@@ -132,9 +132,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   const Icon(Icons.monetization_on, size: 16, color: Color(0xFFFFC107)),
                   const SizedBox(width: 4),
-                  Text(
-                    '${_user.coins}',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                  ValueListenableBuilder<int>(
+                    valueListenable: _user.coinsNotifier,
+                    builder: (_, currentCoins, __) => Text(
+                      '$currentCoins',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
+                    ),
                   ),
                 ],
               ),

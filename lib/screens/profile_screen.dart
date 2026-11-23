@@ -114,7 +114,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildDivider(),
                         _buildStatColumn('સ્ટ્રીક 🔥', '7 દિવસ'),
                         _buildDivider(),
-                        _buildStatColumn('કોઈન્સ 🪙', '${_user.coins}'),
+                        ValueListenableBuilder<int>(
+                          valueListenable: _user.coinsNotifier,
+                          builder: (_, currentCoins, __) => _buildStatColumn('કોઈન્સ 🪙', '$currentCoins'),
+                        ),
                       ],
                     ),
                   ),

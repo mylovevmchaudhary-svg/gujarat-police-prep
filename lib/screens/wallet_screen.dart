@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../widgets/admob_reward_dialog.dart';
 
 class WalletScreen extends StatefulWidget {
   const WalletScreen({super.key});
@@ -13,70 +14,25 @@ class _WalletScreenState extends State<WalletScreen> {
   bool _isWatchingAd = false;
   String _activeTab = 'History'; // 'History' or 'Withdrawals'
 
-  void _watchAd() {
-    setState(() => _isWatchingAd = true);
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.video_collection, color: Color(0xFF0D253F)),
-            SizedBox(width: 8),
-            Text('વિડિઓ એડ પ્લે થઈ રહી છે...', style: TextStyle(fontSize: 15)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: 120,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Color(0xFFFFC107)),
-                  SizedBox(height: 12),
-                  Text(
-                    'Sponsored Ad • 3 સેકન્ડ રાહ જુઓ...',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+  void _watchAd() async {
+    final success = await AdMobRewardedTestAdDialog.show(
+      context,
+      title: 'Google AdMob Rewarded Test Ad',
     );
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pop(context);
-        setState(() {
-          _isWatchingAd = false;
-          _user.addCoins(5, 'વિડિઓ એડ રિવોર્ડ');
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            backgroundColor: Color(0xFF2E7D32),
-            content: Row(
-              children: [
-                Icon(Icons.monetization_on, color: Color(0xFFFFC107)),
-                SizedBox(width: 8),
-                Text('અભિનંદન! તમને +5 કોઈન્સ મળ્યા! 🎉'),
-              ],
-            ),
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Color(0xFF2E7D32),
+          content: Row(
+            children: [
+              Icon(Icons.monetization_on, color: Color(0xFFFFC107)),
+              SizedBox(width: 8),
+              Text('અભિનંદન! તમને +10 કોઈન્સ મળ્યા! 🎉'),
+            ],
           ),
-        );
-      }
-    });
+        ),
+      );
+    }
   }
 
   void _claimDailyBonus() {
@@ -284,9 +240,12 @@ class _WalletScreenState extends State<WalletScreen> {
                           color: Colors.white.withOpacity(0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Text(
-                          'રોકડ મૂલ્ય: ₹${(_user.coins / 10).toStringAsFixed(1)}',
-                          style: const TextStyle(fontSize: 11, color: Color(0xFFFFC107), fontWeight: FontWeight.bold),
+                        child: ValueListenableBuilder<int>(
+                          valueListenable: _user.coinsNotifier,
+                          builder: (_, currentCoins, __) => Text(
+                            'રોકડ મૂલ્ય: ₹${(currentCoins / 10).toStringAsFixed(1)}',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFFFFC107), fontWeight: FontWeight.bold),
+                          ),
                         ),
                       ),
                     ],
@@ -299,12 +258,15 @@ class _WalletScreenState extends State<WalletScreen> {
                         children: [
                           const Icon(Icons.monetization_on, size: 36, color: Color(0xFFFFC107)),
                           const SizedBox(width: 8),
-                          Text(
-                            '${_user.coins}',
-                            style: const TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFFFC107),
+                          ValueListenableBuilder<int>(
+                            valueListenable: _user.coinsNotifier,
+                            builder: (_, currentCoins, __) => Text(
+                              '$currentCoins',
+                              style: const TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFFFC107),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 6),

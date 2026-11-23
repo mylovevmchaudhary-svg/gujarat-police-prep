@@ -70,25 +70,23 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v3.4.0-latest
-          name: "PSI Mock Test & Admin Console v3.4.0 (Authentic Police Badge, Real Notifications & Supabase Sync)"
+          tag_name: v3.5.0-latest
+          name: "PSI Mock Test & Admin Console v3.5.0 (Supabase Real Auth, Reactive Wallet & AdMob Rewarded Ads)"
           body: |
-            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.4.0
+            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.5.0
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.4.0-latest/PSI_Mock_Test_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.4.0-latest/PSI_Mock_Test_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.4.0-latest/PSI_Mock_Test_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.5.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.5.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.5.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### 🛡️ What's New in v3.4.0:
-            - 🎖️ **Authentic Gujarat Police Emblem:** Regal Gold and Deep Navy Blue insignia featuring Ashoka 3-Lions crest, 8-point starburst, laurel wreath, and "સેવા સુરક્ષા શાંતિ" motto across splash screen and app icons.
-            - 🗑️ **Zero Hardcoded Dummy Questions:** All sample dummy MCQs purged from tests and syllabus. 100% database driven from Supabase or Admin Console.
-            - 🔔 **Mobile Notification System:** Replaced bookmark icon with real-time notification bell and unread badge. Heads-up mobile alert banners.
-            - 🌐 **Direct Website & Community Launch:** Website button opens directly in browser without popup confirmation.
-            - 🎛️ **Admin Social Media Links Manager:** Dedicated editor in Admin Console to save custom URLs (Website, WhatsApp, Telegram, YouTube, Instagram) dynamically synced to students.
-            - 📢 **Admin Notification Broadcast:** Admin can broadcast instant notifications to all student apps.
-            - 🔐 **Password-Protected Admin Console:** Login with `admin@police.gov.in` and `Police@2026`.
-            - 🛡️ **Google Play Store Compliant:** Student app is 100% clean with zero admin code, zero test tokens, and hardened against security checks.
+            ### 🛡️ What's New in v3.5.0:
+            - 🔐 **Real Supabase Cloud Authentication:** Live signup and login hooked directly to Supabase (`/auth/v1/signup` and `/auth/v1/token`), instantly registering users into Supabase Auth & public.profiles tables.
+            - 🪙 **Persistent & Real-time Reactive Wallet:** Coins persist between app restarts and sync in real time across Home, Test Series, and Wallet tabs using reactive ValueNotifiers.
+            - 📺 **Google AdMob Rewarded Test Ads:** Full interactive AdMob Rewarded Video Ad player (Test Unit: `ca-app-pub-3940256099942544/5224354917`) with countdown, early exit protection, and coin rewards.
+            - 🗄️ **Zero Hardcoded Dummy Notifications:** Notifications are 100% cloud driven from Supabase with clean empty state when no announcements are present.
+            - 🎖️ **Authentic Gujarat Police Emblem:** Regal Gold and Navy insignia on splash screen and launcher icons.
+            - 🎛️ **Admin Console Links & Broadcast Manager:** Update custom social links and broadcast push notifications to students.
           files: |
             build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk

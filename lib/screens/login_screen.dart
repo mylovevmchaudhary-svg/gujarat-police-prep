@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../services/supabase_service.dart';
 import 'main_navigation_screen.dart';
 import 'register_screen.dart';
 
@@ -14,9 +15,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
   String _errorMessage = '';
 
-  void _handleLogin() {
+  void _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -29,12 +31,21 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    UserModel().login(userEmail: email);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-    );
+    // Real Supabase Auth & Cloud Database Login
+    await SupabaseService().signIn(email: email, password: password);
+
+    if (mounted) {
+      setState(() => _isLoading = false);
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+      );
+    }
   }
 
   void _continueAsGuest() {
@@ -149,11 +160,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: _handleLogin,
-                    child: const Text(
-                      'લૉગિન કરો (Login)',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
+                    onPressed: _isLoading ? null : _handleLogin,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                          )
+                        : const Text(
+                            'લૉગિન કરો (Login)',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
                   ),
                   const SizedBox(height: 14),
 

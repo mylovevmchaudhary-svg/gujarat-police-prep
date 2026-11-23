@@ -3,6 +3,7 @@ import '../data/curated_question_bank.dart';
 import '../models/exam_category.dart';
 import '../models/quiz_model.dart';
 import '../models/user_model.dart';
+import '../widgets/admob_reward_dialog.dart';
 import 'quiz_screen.dart';
 
 class TestSeriesScreen extends StatefulWidget {
@@ -119,53 +120,21 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
     );
   }
 
-  void _simulateWatchAd(MockTest test) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              height: 120,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(color: Color(0xFFFFC107)),
-                  SizedBox(height: 12),
-                  Text(
-                    'Sponsored Ad • ટેસ્ટ અનલોક થઈ રહ્યો છે...',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+  void _simulateWatchAd(MockTest test) async {
+    final success = await AdMobRewardedTestAdDialog.show(
+      context,
+      title: 'Google AdMob Rewarded Video',
+      testId: test.id,
     );
-
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.pop(context); // Close ad
-        _user.unlockWithAd(test.id);
-        setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            backgroundColor: const Color(0xFF2E7D32),
-            content: Text('${test.title} સફળતાપૂર્વક અનલોક થઈ ગઈ! 🎉 (+5 બોનસ કોઈન્સ)'),
-          ),
-        );
-        _startTest(test);
-      }
-    });
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF2E7D32),
+          content: Text('${test.title} સફળતાપૂર્વક અનલોક થઈ ગઈ! 🎉 (+10 બોનસ કોઈન્સ)'),
+        ),
+      );
+      _startTest(test);
+    }
   }
 
   void _startTest(MockTest test) {
@@ -257,9 +226,12 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
               children: [
                 const Icon(Icons.monetization_on, size: 16, color: Color(0xFFFFC107)),
                 const SizedBox(width: 4),
-                Text(
-                  '${_user.coins}',
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                ValueListenableBuilder<int>(
+                  valueListenable: _user.coinsNotifier,
+                  builder: (_, currentCoins, __) => Text(
+                    '$currentCoins',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
                 ),
               ],
             ),

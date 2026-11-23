@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/user_model.dart';
+import '../services/supabase_service.dart';
 import 'main_navigation_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -15,9 +16,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _referralCodeController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isLoading = false;
   String _errorMessage = '';
 
-  void _handleRegister() {
+  void _handleRegister() async {
     final name = _nameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -36,29 +38,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // Register user
-    UserModel().register(
-      userName: name,
-      userEmail: email,
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+
+    // Real Supabase Cloud Auth & Profiles registration
+    await SupabaseService().signUp(
+      name: name,
+      email: email,
+      password: password,
       referralCode: refCode.isNotEmpty ? refCode : null,
     );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF2E7D32),
-        content: Text(
-          refCode.isNotEmpty
-            ? 'ખાતું બની ગયું! રેફરલ બોનસ સાથે +50 કોઈન્સ મળ્યા! 🎉'
-            : 'ખાતું સફળતાપૂર્વક બની ગયું! વેલકમ બોનસ +30 કોઈન્સ મળ્યા! 🎉',
-        ),
-      ),
-    );
+    if (mounted) {
+      setState(() => _isLoading = false);
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-      (route) => false,
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: const Color(0xFF2E7D32),
+          content: Text(
+            refCode.isNotEmpty
+              ? 'ખાતું બની ગયું! રેફરલ બોનસ સાથે +50 કોઈન્સ મળ્યા! 🎉'
+              : 'ખાતું સફળતાપૂર્વક બની ગયું! વેલકમ બોનસ +30 કોઈન્સ મળ્યા! 🎉',
+          ),
+        ),
+      );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        (route) => false,
+      );
+    }
   }
 
   @override
@@ -226,11 +238,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       minimumSize: const Size(double.infinity, 48),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
-                    onPressed: _handleRegister,
-                    child: const Text(
-                      'સાઇન અપ કરો અને શરૂ કરો',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                    ),
+                    onPressed: _isLoading ? null : _handleRegister,
+                    child: _isLoading
+                        ? const SizedBox(
+                            width: 22,
+                            height: 22,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.5),
+                          )
+                        : const Text(
+                            'સાઇન અપ કરો અને શરૂ કરો',
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
                   ),
                   const SizedBox(height: 14),
 
