@@ -399,7 +399,7 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
                                         Text(
                                           test.questions.isNotEmpty
                                               ? '${test.questions.length} MCQs • ${test.questions.length} ગુણ'
-                                              : '${test.totalQuestions} MCQs (લાઇવ ડેટાબેઝ)',
+                                              : '${test.totalQuestions} MCQs',
                                           style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
                                         ),
                                       ],

@@ -178,34 +178,34 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 -- Allow Students & Admin apps to seamlessly read and write without auth errors
 DROP POLICY IF EXISTS "Public Full Access Mock Tests" ON public.mock_tests;
-CREATE POLICY "Public Full Access Mock Tests" ON public.mock_tests FOR ALL USING (true);
+CREATE POLICY "Public Full Access Mock Tests" ON public.mock_tests FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Questions" ON public.questions;
-CREATE POLICY "Public Full Access Questions" ON public.questions FOR ALL USING (true);
+CREATE POLICY "Public Full Access Questions" ON public.questions FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Mock Test Questions" ON public.mock_test_questions;
-CREATE POLICY "Public Full Access Mock Test Questions" ON public.mock_test_questions FOR ALL USING (true);
+CREATE POLICY "Public Full Access Mock Test Questions" ON public.mock_test_questions FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Syllabus" ON public.syllabus;
-CREATE POLICY "Public Full Access Syllabus" ON public.syllabus FOR ALL USING (true);
+CREATE POLICY "Public Full Access Syllabus" ON public.syllabus FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Syllabus Topics" ON public.syllabus_topics;
-CREATE POLICY "Public Full Access Syllabus Topics" ON public.syllabus_topics FOR ALL USING (true);
+CREATE POLICY "Public Full Access Syllabus Topics" ON public.syllabus_topics FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Settings" ON public.app_settings;
-CREATE POLICY "Public Full Access Settings" ON public.app_settings FOR ALL USING (true);
+CREATE POLICY "Public Full Access Settings" ON public.app_settings FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Notifications" ON public.notifications;
-CREATE POLICY "Public Full Access Notifications" ON public.notifications FOR ALL USING (true);
+CREATE POLICY "Public Full Access Notifications" ON public.notifications FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Withdrawals" ON public.withdrawals;
-CREATE POLICY "Public Full Access Withdrawals" ON public.withdrawals FOR ALL USING (true);
+CREATE POLICY "Public Full Access Withdrawals" ON public.withdrawals FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Profiles" ON public.profiles;
-CREATE POLICY "Public Full Access Profiles" ON public.profiles FOR ALL USING (true);
+CREATE POLICY "Public Full Access Profiles" ON public.profiles FOR ALL USING (true) WITH CHECK (true);
 
 DROP POLICY IF EXISTS "Public Full Access Wallet" ON public.wallet_transactions;
-CREATE POLICY "Public Full Access Wallet" ON public.wallet_transactions FOR ALL USING (true);
+CREATE POLICY "Public Full Access Wallet" ON public.wallet_transactions FOR ALL USING (true) WITH CHECK (true);
 
 -- Enable Supabase Realtime Publication for instant live sync across devices
 DO $$

@@ -21,7 +21,7 @@ class SupabaseService {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
+      client.connectionTimeout = const Duration(seconds: 6);
       final request = await client.getUrl(uri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Authorization', 'Bearer $supabaseAnonKey');
@@ -31,29 +31,41 @@ class SupabaseService {
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final body = await response.transform(utf8.decoder).join();
         return jsonDecode(body);
+      } else {
+        debugPrint('[SupabaseService] GET error $endpoint: ${response.statusCode}');
       }
-    } catch (_) {
-      // Graceful offline fallback
+    } catch (e) {
+      debugPrint('[SupabaseService] GET network error on $endpoint: $e');
     }
     return null;
   }
 
   /// Generic POST request to Supabase REST endpoint
-  Future<bool> _restPost(String endpoint, Map<String, dynamic> data) async {
+  Future<bool> _restPost(String endpoint, Map<String, dynamic> data, {bool preferUpsert = false}) async {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
+      client.connectionTimeout = const Duration(seconds: 6);
       final request = await client.postUrl(uri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Authorization', 'Bearer $supabaseAnonKey');
       request.headers.set('Content-Type', 'application/json');
-      request.headers.set('Prefer', 'return=minimal');
+      if (preferUpsert) {
+        request.headers.set('Prefer', 'resolution=merge-duplicates,return=representation');
+      } else {
+        request.headers.set('Prefer', 'return=representation');
+      }
 
       request.write(jsonEncode(data));
       final response = await request.close();
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch (_) {
+      final success = response.statusCode >= 200 && response.statusCode < 300;
+      if (!success) {
+        final body = await response.transform(utf8.decoder).join();
+        debugPrint('[SupabaseService] POST $endpoint failed (${response.statusCode}): $body');
+      }
+      return success;
+    } catch (e) {
+      debugPrint('[SupabaseService] POST $endpoint network error: $e');
       return false;
     }
   }
@@ -63,7 +75,7 @@ class SupabaseService {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 5);
+      client.connectionTimeout = const Duration(seconds: 6);
       final request = await client.patchUrl(uri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Authorization', 'Bearer $supabaseAnonKey');
@@ -72,8 +84,13 @@ class SupabaseService {
 
       request.write(jsonEncode(data));
       final response = await request.close();
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch (_) {
+      final success = response.statusCode >= 200 && response.statusCode < 300;
+      if (!success) {
+        debugPrint('[SupabaseService] PATCH $endpoint failed (${response.statusCode})');
+      }
+      return success;
+    } catch (e) {
+      debugPrint('[SupabaseService] PATCH $endpoint error: $e');
       return false;
     }
   }
@@ -102,7 +119,7 @@ class SupabaseService {
     try {
       final authUri = Uri.parse('$supabaseUrl/auth/v1/signup');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 6);
+      client.connectionTimeout = const Duration(seconds: 8);
       final request = await client.postUrl(authUri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Content-Type', 'application/json');
@@ -123,21 +140,24 @@ class SupabaseService {
       final body = await response.transform(utf8.decoder).join();
       final Map<String, dynamic> jsonResponse = jsonDecode(body);
 
-      String? userId = jsonResponse['id'] ?? jsonResponse['user']?['id'];
+      final userId = jsonResponse['id']?.toString() ?? jsonResponse['user']?['id']?.toString();
 
-      // 3. Sync into public.profiles table
-      await _restPost('profiles', {
-        if (userId != null) 'id': userId,
-        'name': name,
-        'email': email,
-        'my_referral_code': _user.myReferralCode,
-        'referred_by': referralCode,
-        'coins': _user.coins,
-      });
+      // 3. Upsert into public.profiles table using authenticated user's actual UUID
+      if (userId != null && userId.isNotEmpty) {
+        final profileCreated = await _restPost('profiles?on_conflict=id', {
+          'id': userId,
+          'name': name,
+          'email': email,
+          'my_referral_code': _user.myReferralCode,
+          'referred_by': referralCode,
+          'coins': _user.coins,
+        }, preferUpsert: true);
+        debugPrint('[SupabaseService] Profile created in profiles: $profileCreated (UID: $userId)');
+      }
 
       return {'success': true, 'userId': userId};
     } catch (e) {
-      // Offline fallback: user registered locally
+      debugPrint('[SupabaseService] SignUp error: $e');
       return {'success': true, 'offline': true};
     }
   }
@@ -154,7 +174,7 @@ class SupabaseService {
     try {
       final tokenUri = Uri.parse('$supabaseUrl/auth/v1/token?grant_type=password');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 6);
+      client.connectionTimeout = const Duration(seconds: 8);
       final request = await client.postUrl(tokenUri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Content-Type', 'application/json');
@@ -170,6 +190,10 @@ class SupabaseService {
 
       // If user signed in, load their live profile coins from Supabase
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        final userId = jsonResponse['user']?['id']?.toString();
+        final userMetadata = jsonResponse['user']?['user_metadata'];
+        final userName = userMetadata?['name']?.toString() ?? email.split('@').first;
+
         final profileData = await _restGet('profiles?email=eq.$email&select=*');
         if (profileData is List && profileData.isNotEmpty) {
           final p = profileData.first;
@@ -177,15 +201,25 @@ class SupabaseService {
           final remoteName = p['name']?.toString();
           if (remoteCoins != null) _user.setCoins(remoteCoins);
           if (remoteName != null && remoteName.isNotEmpty) _user.name = remoteName;
+        } else if (userId != null && userId.isNotEmpty) {
+          // If profile record missing in profiles table, upsert it with authenticated user's UUID
+          await _restPost('profiles?on_conflict=id', {
+            'id': userId,
+            'name': userName,
+            'email': email,
+            'my_referral_code': _user.myReferralCode,
+            'coins': _user.coins,
+          }, preferUpsert: true);
         }
         return {'success': true, 'data': jsonResponse};
       } else {
         // If user not in Supabase auth yet, attempt auto-signup with the password
+        debugPrint('[SupabaseService] User not in Auth, creating user via signUp for $email');
         await signUp(name: email.split('@').first, email: email, password: password);
         return {'success': true, 'autoRegistered': true};
       }
-    } catch (_) {
-      // Local login fallback
+    } catch (e) {
+      debugPrint('[SupabaseService] SignIn error: $e');
       return {'success': true, 'offline': true};
     }
   }
@@ -194,18 +228,13 @@ class SupabaseService {
   Future<void> syncCoinsToDatabase(String email, int coins) async {
     if (email.isEmpty || !email.contains('@')) return;
     try {
-      // Try PATCH first
       final patched = await _restPatch('profiles?email=eq.$email', {'coins': coins});
       if (!patched) {
-        // Try UPSERT via POST
-        await _restPost('profiles', {
-          'email': email,
-          'name': _user.name,
-          'my_referral_code': _user.myReferralCode,
-          'coins': coins,
-        });
+        debugPrint('[SupabaseService] Coins patch failed for $email, coins: $coins');
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SupabaseService] syncCoins error: $e');
+    }
   }
 
   /// Helper to safely map raw database row to Question model
@@ -246,16 +275,23 @@ class SupabaseService {
   }
 
   /// 1. Fetch DYNAMIC Mock Tests from Supabase `mock_tests` table (0 hardcoded limits)
+  /// Always calculates actual MCQ counts dynamically from `mock_test_questions` table!
   Future<List<MockTest>> fetchMockTests({String? examId}) async {
-    String endpoint = 'mock_tests?select=*&order=created_at.asc';
+    String endpoint = 'mock_tests?select=*,mock_test_questions(count)&order=id.asc';
     if (examId != null && examId.isNotEmpty) {
-      endpoint = 'mock_tests?exam_id=eq.$examId&select=*&order=created_at.asc';
+      endpoint = 'mock_tests?exam_id=eq.$examId&select=*,mock_test_questions(count)&order=id.asc';
     }
 
     final result = await _restGet(endpoint);
     if (result is List && result.isNotEmpty) {
       return result.map<MockTest>((item) {
         final isFreeVal = item['is_free'] == true;
+        int actualCount = 0;
+        final mtq = item['mock_test_questions'];
+        if (mtq is List && mtq.isNotEmpty) {
+          actualCount = (mtq.first['count'] as num?)?.toInt() ?? 0;
+        }
+
         return MockTest(
           id: item['id']?.toString() ?? '',
           title: item['title']?.toString() ?? 'મોક ટેસ્ટ',
@@ -266,6 +302,7 @@ class SupabaseService {
           negativeMarksPerQuestion: (item['negative_marks'] as num?)?.toDouble() ?? 0.25,
           isFree: isFreeVal,
           dbTotalQuestions: (item['total_questions'] as num?)?.toInt() ?? 200,
+          actualMcqCount: actualCount,
           examId: item['exam_id']?.toString() ?? 'constable',
           questions: [],
         );

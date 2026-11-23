@@ -36,6 +36,7 @@ class MockTest {
   final double negativeMarksPerQuestion;
   final bool isFree;
   final int dbTotalQuestions;
+  final int actualMcqCount;
   final String examId;
   List<Question> questions;
 
@@ -49,11 +50,12 @@ class MockTest {
     this.negativeMarksPerQuestion = 0.25,
     this.isFree = true,
     this.dbTotalQuestions = 200,
+    this.actualMcqCount = 0,
     this.examId = 'constable',
     required this.questions,
   });
 
-  int get totalQuestions => questions.isNotEmpty ? questions.length : dbTotalQuestions;
+  int get totalQuestions => questions.isNotEmpty ? questions.length : actualMcqCount;
   double get totalPossibleMarks => totalQuestions * positiveMarksPerQuestion;
 }
 

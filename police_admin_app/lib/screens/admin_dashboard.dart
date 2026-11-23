@@ -349,7 +349,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   icon: const Icon(Icons.check, color: Color(0xFFFFC107)),
                   label: Text(editIndex != null ? 'પ્રશ્ન અપડેટ કરો' : 'પ્રશ્ન સેવ કરો (Save Question)'),
-                  onPressed: () {
+                  onPressed: () async {
                     if (qCtrl.text.trim().isEmpty || optACtrl.text.trim().isEmpty) return;
                     final qData = {
                       'question': qCtrl.text.trim(),
@@ -363,13 +363,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       'explanation': expCtrl.text.trim(),
                     };
 
+                    Navigator.pop(ctx);
                     if (editIndex != null) {
                       _adminData.editQuestion(_selectedTestId, editIndex, qData);
+                      setState(() {});
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          backgroundColor: Color(0xFF2E7D32),
+                          content: Text('પ્રશ્ન સફળતાપૂર્વક અપડેટ થયો! ✅'),
+                        ),
+                      );
                     } else {
-                      _adminData.addQuestion(_selectedTestId, qData);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('પ્રશ્ન Supabase માં સેવ થઈ રહ્યો છે...')),
+                      );
+                      final success = await _adminData.addQuestion(_selectedTestId, qData);
+                      if (mounted) {
+                        setState(() {});
+                        if (success) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              backgroundColor: Color(0xFF2E7D32),
+                              content: Text('પ્રશ્ન સફળતાપૂર્વક ઉમેરાયો અને સેવ થયો! ✅ (Supabase Synced)'),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              backgroundColor: Colors.redAccent,
+                              content: Text('પ્રશ્ન સેવ કરવામાં ક્ષતિ આવી. કૃપા કરીને પુનઃ પ્રયાસ કરો.'),
+                            ),
+                          );
+                        }
+                      }
                     }
-                    Navigator.pop(ctx);
-                    setState(() {});
                   },
                 ),
               ],
@@ -562,7 +589,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       final q = _studentSearch.toLowerCase();
       final name = (s['name'] ?? '').toString().toLowerCase();
       final email = (s['email'] ?? '').toString().toLowerCase();
-      return name.contains(q) || email.contains(q);
+      final id = (s['id'] ?? '').toString().toLowerCase();
+      final phone = (s['phone'] ?? '').toString().toLowerCase();
+      return name.contains(q) || email.contains(q) || id.contains(q) || phone.contains(q);
     }).toList();
 
     return Column(
@@ -572,7 +601,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           child: TextField(
             decoration: InputDecoration(
-              hintText: 'વિદ્યાર્થી શોધો (નામ અથવા ઈમેલ)...',
+              hintText: 'વિદ્યાર્થી શોધો (નામ, ઈમેલ અથવા UID)...',
               prefixIcon: const Icon(Icons.search, size: 20),
               filled: true,
               fillColor: const Color(0xFFF0F4F8),
@@ -631,6 +660,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                 children: [
                                   Text(student['name'] ?? 'વિદ્યાર્થી', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                                   Text(student['email'] ?? '', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                                  if ((student['phone'] ?? '').toString().isNotEmpty)
+                                    Text('📱 ${student['phone']}', style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                                  Text('UID: ${student['id']}', style: TextStyle(fontSize: 9, color: Colors.grey[400])),
                                   const SizedBox(height: 4),
                                   Text('જોડાયા: ${student['joinedDate']} • રેફરલ્સ: ${student['referrals'] ?? 0}', style: TextStyle(fontSize: 10, color: Colors.grey[500])),
                                 ],
@@ -731,7 +763,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       ),
                       items: _adminData.tests.map((t) {
                         final testId = t['id'] as String;
-                        final count = _adminData.testQuestions[testId]?.length ?? 0;
+                        final count = (_adminData.testQuestions[testId]?.isNotEmpty == true)
+                            ? _adminData.testQuestions[testId]!.length
+                            : ((t['totalMcqs'] as num?)?.toInt() ?? 0);
                         return DropdownMenuItem(
                           value: testId,
                           child: Text(
@@ -836,7 +870,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                       Text(
                         _questionSearch.isNotEmpty
                             ? 'શોધ પરિણામ મળ્યું નથી.'
-                            : 'આ ટેસ્ટમાં હજુ કોઈ પ્રશ્ન નથી. "નવો પ્રશ્ન" બટન દબાવો.',
+                            : 'આ મોક ટેસ્ટમાં હાલમાં 0 MCQs છે. "નવો પ્રશ્ન" બટન દબાવો.',
                         style: TextStyle(color: Colors.grey[600], fontSize: 13),
                       ),
                     ],

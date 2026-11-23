@@ -100,6 +100,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 200,
         questions: _cachedQuestions['constable_1'] ?? [],
       ),
       MockTest(
@@ -110,6 +111,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 0,
         questions: _cachedQuestions['constable_2'] ?? [],
       ),
       MockTest(
@@ -120,6 +122,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 0,
         questions: _cachedQuestions['constable_3'] ?? [],
       ),
       MockTest(
@@ -130,6 +133,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 0,
         questions: _cachedQuestions['constable_4'] ?? [],
       ),
       MockTest(
@@ -140,6 +144,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 0,
         questions: _cachedQuestions['constable_5'] ?? [],
       ),
     ];
@@ -155,6 +160,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 0,
         questions: _cachedQuestions['psi_1'] ?? [],
       ),
       MockTest(
@@ -165,6 +171,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 0,
         questions: _cachedQuestions['psi_2'] ?? [],
       ),
       MockTest(
@@ -175,6 +182,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 0,
         questions: _cachedQuestions['psi_3'] ?? [],
       ),
       MockTest(
@@ -185,6 +193,7 @@ class CuratedQuestionBank {
         durationMinutes: 180,
         positiveMarksPerQuestion: 1.0,
         negativeMarksPerQuestion: 0.25,
+        actualMcqCount: 0,
         questions: _cachedQuestions['psi_4'] ?? [],
       ),
     ];

@@ -118,12 +118,18 @@ class AdminDataManager {
 
   /// 1. Fetch Real Mock Tests from Supabase (Supports Mock Tests 1 to 100+ dynamically!)
   Future<void> fetchRealMockTests() async {
-    final result = await restGet('mock_tests?select=*&order=created_at.asc');
+    final result = await restGet('mock_tests?select=*,mock_test_questions(count)&order=id.asc');
     if (result is List && result.isNotEmpty) {
       tests.clear();
       for (final item in result) {
         final examId = item['exam_id']?.toString() ?? 'constable';
         final testId = item['id']?.toString() ?? '';
+        int mcqCount = 0;
+        final mtq = item['mock_test_questions'];
+        if (mtq is List && mtq.isNotEmpty) {
+          mcqCount = (mtq.first['count'] as num?)?.toInt() ?? 0;
+        }
+
         tests.add({
           'id': testId,
           'exam': examId == 'psi' ? 'PSI / ASI' : 'કોન્સ્ટેબલ (LRD)',
@@ -131,7 +137,7 @@ class AdminDataManager {
           'title': item['title']?.toString() ?? 'મોક ટેસ્ટ',
           'description': item['description']?.toString() ?? '',
           'isFree': item['is_free'] == true,
-          'totalMcqs': (item['total_questions'] as num?)?.toInt() ?? 200,
+          'totalMcqs': mcqCount,
           'duration': (item['duration_minutes'] as num?)?.toInt() ?? 180,
         });
 
@@ -142,9 +148,15 @@ class AdminDataManager {
     } else if (tests.isEmpty) {
       // Fallback defaults if database connection is cold
       tests.addAll([
-        {'id': 'constable_1', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'મોક ટેસ્ટ 01', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-        {'id': 'constable_2', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'મોક ટેસ્ટ 02', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-        {'id': 'psi_1', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI પ્રિલિમિનરી 01', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
+        {'id': 'constable_1', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ સંપૂર્ણ મોક ટેસ્ટ 01', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
+        {'id': 'constable_2', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ સંપૂર્ણ મોક ટેસ્ટ 02', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
+        {'id': 'constable_3', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ સંપૂર્ણ મોક ટેસ્ટ 03', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
+        {'id': 'constable_4', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ પ્રીમિયમ મોક ટેસ્ટ 04', 'isFree': false, 'totalMcqs': 0, 'duration': 180},
+        {'id': 'constable_5', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ પ્રીમિયમ મોક ટેસ્ટ 05', 'isFree': false, 'totalMcqs': 0, 'duration': 180},
+        {'id': 'psi_1', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI પ્રિલિમિનરી મોક ટેસ્ટ 01', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
+        {'id': 'psi_2', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI કાયદો & બંધારણ મોક ટેસ્ટ 02', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
+        {'id': 'psi_3', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI ભાષાકીય & વ્યાકરણ મોક ટેસ્ટ 03', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
+        {'id': 'psi_4', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI પ્રીમિયમ સંપૂર્ણ મોક ટેસ્ટ 04', 'isFree': false, 'totalMcqs': 0, 'duration': 180},
       ]);
     }
   }
@@ -166,8 +178,10 @@ class AdminDataManager {
           'id': item['id']?.toString() ?? '',
           'name': item['name']?.toString() ?? 'વિદ્યાર્થી',
           'email': item['email']?.toString() ?? '',
+          'phone': item['phone']?.toString() ?? item['mobile']?.toString() ?? '',
           'coins': (item['coins'] as num?)?.toInt() ?? 0,
           'referrals': (item['total_referrals'] as num?)?.toInt() ?? 0,
+          'referralCode': item['my_referral_code']?.toString() ?? '',
           'joinedDate': joinedStr,
           'isActive': true,
         });
@@ -387,22 +401,15 @@ class AdminDataManager {
   }
 
   /// Add question and persist to Supabase `questions` and `mock_test_questions`
-  void addQuestion(String testId, Map<String, dynamic> question) async {
+  Future<bool> addQuestion(String testId, Map<String, dynamic> question) async {
     final questionId = 'q_${DateTime.now().millisecondsSinceEpoch}';
-    final qMap = Map<String, dynamic>.from(question);
-    qMap['id'] = questionId;
 
-    if (!testQuestions.containsKey(testId)) {
-      testQuestions[testId] = [];
-    }
-    testQuestions[testId]?.add(qMap);
-
+    // Exactly 4 options for Supabase check constraint
     final optionsList = [
       question['optionA'] ?? '',
       question['optionB'] ?? '',
       question['optionC'] ?? '',
       question['optionD'] ?? '',
-      question['optionE'] ?? 'પ્રયાસ કરેલ નથી',
     ];
     int correctIdx = 0;
     if (question['correct'] == 'B') correctIdx = 1;
@@ -411,7 +418,7 @@ class AdminDataManager {
     if (question['correct'] == 'E') correctIdx = 4;
 
     // 1. Insert into questions table
-    await restPost('questions', {
+    final qSuccess = await restPost('questions', {
       'id': questionId,
       'test_id': testId,
       'exam_id': testId.startsWith('psi') ? 'psi' : 'constable',
@@ -422,13 +429,36 @@ class AdminDataManager {
       'explanation': question['explanation'] ?? '',
     });
 
+    if (!qSuccess) {
+      return false;
+    }
+
     // 2. Also map into mock_test_questions
-    final currentPos = (testQuestions[testId]?.length ?? 1);
+    final currentPos = (testQuestions[testId]?.length ?? 0) + 1;
     await restPost('mock_test_questions', {
       'test_id': testId,
       'question_id': questionId,
       'position': currentPos,
     });
+
+    // 3. Only add locally once confirmed from Supabase, prevent duplicate
+    final qMap = Map<String, dynamic>.from(question);
+    qMap['id'] = questionId;
+
+    if (!testQuestions.containsKey(testId)) {
+      testQuestions[testId] = [];
+    }
+    if (!testQuestions[testId]!.any((q) => q['id'] == questionId)) {
+      testQuestions[testId]?.add(qMap);
+    }
+
+    // Refresh test totalMcqs count
+    final testIdx = tests.indexWhere((t) => t['id'] == testId);
+    if (testIdx >= 0) {
+      tests[testIdx]['totalMcqs'] = testQuestions[testId]?.length ?? 0;
+    }
+
+    return true;
   }
 
   void editQuestion(String testId, int index, Map<String, dynamic> question) {

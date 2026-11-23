@@ -72,22 +72,22 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v3.8.0-latest
-          name: "PSI Mock Test & Admin Console v3.8.0 (Permanent Dynamic Supabase Sync - 200+ MCQs, Tests 1-100+, Live Syllabus)"
+          tag_name: v3.9.0-latest
+          name: "PSI Mock Test & Admin Console v3.9.0 (Dynamic Supabase Sync - 9 Mock Tests, Real MCQ Counts, Live Profiles Auth)"
           body: |
-            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.8.0
+            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.9.0
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.8.0-latest/PSI_Mock_Test_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.8.0-latest/PSI_Mock_Test_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.8.0-latest/PSI_Mock_Test_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.9.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.9.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.9.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### 🚀 What's New in v3.8.0 (Permanent Supabase Dynamic Sync):
-            - 🧠 **Dynamic MCQ System (200 to 10,000+ MCQs):** Full paginated batch streaming from `mock_test_questions` joined with `questions`. Constable Mock Test 1 immediately loads all 200 real MCQs with options, Gujarati explanations, and proper answers without any 1,000-row Supabase limit.
-            - 📝 **Dynamic Mock Tests (Tests 1 to 100+):** Zero hardcoded tests. Any test added via ChatGPT or SQL immediately displays across both Student and Admin apps. Dedicated Admin dialog to create Mock Test 6, 7, 8... 100 on the fly.
-            - 📚 **100% Dynamic Syllabus & Topics:** Switched completely from static hardcoded files to Supabase `syllabus` and `syllabus_topics` (151 real topics). Topic-specific MCQ counts and practice sessions are dynamically queried from live database questions.
-            - 🔄 **Zero Manual App Updates Required:** Supabase is now the absolute Single Source of Truth. Changes to questions, mock tests, and syllabus appear instantly in the app via pull-to-refresh without re-compiling or updating APKs.
-            - 🔐 **Military-Grade Cryptographic Vault & Obfuscation:** XOR-256 encrypted credentials, salted SHA-256 admin authentication, and Flutter AOT release obfuscation.
+            ### 🚀 What's Fixed in v3.9.0 (Database Connection & Data Synchronization):
+            - 📋 **All 9 Mock Tests Visible (5 Constable + 4 PSI):** All 9 tests dynamically loaded from Supabase `mock_tests`. Tests with 0 MCQs are never hidden and properly display "0 MCQs".
+            - 🔢 **Accurate Database MCQ Counts:** Computed dynamically via `mock_test_questions(count)`. Displays 200 MCQs for Constable 01 and 0 MCQs for remaining tests.
+            - 👤 **Real Supabase Auth & Profiles Synchronization:** User registration and login use official Supabase Auth UUID as `profiles.id` with upsert logic. Displays student name, email, phone (if present), UID, and registration date in the Admin Panel without dummy data.
+            - 🛠️ **Admin MCQ Management Hardening:** Verified question insertion with 4 distinct options matching database check constraints. Added confirmation checks before local state updates.
+            - 🎨 **Strict UI Preservation:** 100% design, colors, layout, fonts, navigation, and features preserved without alteration.
           files: |
             build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk
