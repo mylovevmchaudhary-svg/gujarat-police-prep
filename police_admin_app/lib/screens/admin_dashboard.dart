@@ -30,6 +30,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   // Masked API Key display
   bool _showApiKey = false;
 
+  // Social Links Controllers
+  late final TextEditingController _websiteCtrl;
+  late final TextEditingController _whatsappCtrl;
+  late final TextEditingController _telegramCtrl;
+  late final TextEditingController _youtubeCtrl;
+  late final TextEditingController _instagramCtrl;
+
+  // Notification Broadcast Controllers
+  final TextEditingController _notifTitleCtrl = TextEditingController();
+  final TextEditingController _notifMsgCtrl = TextEditingController();
+  String _selectedNotifType = 'exam';
+
+  @override
+  void initState() {
+    super.initState();
+    _websiteCtrl = TextEditingController(text: _adminData.socialLinks['website'] ?? 'https://gujaratpoliceprep.in');
+    _whatsappCtrl = TextEditingController(text: _adminData.socialLinks['whatsapp'] ?? 'https://chat.whatsapp.com/KhakhiPrep2026');
+    _telegramCtrl = TextEditingController(text: _adminData.socialLinks['telegram'] ?? 'https://t.me/GujaratPolicePrep');
+    _youtubeCtrl = TextEditingController(text: _adminData.socialLinks['youtube'] ?? 'https://youtube.com/@GujaratPolicePrep');
+    _instagramCtrl = TextEditingController(text: _adminData.socialLinks['instagram'] ?? 'https://instagram.com/gujaratpoliceprep');
+  }
+
+  @override
+  void dispose() {
+    _websiteCtrl.dispose();
+    _whatsappCtrl.dispose();
+    _telegramCtrl.dispose();
+    _youtubeCtrl.dispose();
+    _instagramCtrl.dispose();
+    _notifTitleCtrl.dispose();
+    _notifMsgCtrl.dispose();
+    _csvController.dispose();
+    super.dispose();
+  }
+
   // Withdrawal Requests list managed by Admin
   final List<Map<String, dynamic>> _withdrawals = [
     {
@@ -703,10 +738,173 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('સુરક્ષા & ડેટાબેઝ સેટિંગ્સ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0D253F))),
-          const SizedBox(height: 14),
+          // 1. Social Media & Website Manager
           Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.share, color: Color(0xFF0D253F)),
+                      SizedBox(width: 8),
+                      Text(
+                        'સોશિયલ & વેબસાઇટ લિંક્સ મેનેજર 🌐',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0D253F)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'અહીં તમારી પોતાની લિંક્સ દાખલ કરો. સેવ કરતા જ વિદ્યાર્થી એપમાં આ લિંક્સ ઓપન થશે.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  const Divider(height: 20),
+                  _buildLinkInput('અધિકૃત વેબસાઇટ URL', _websiteCtrl, Icons.language, Colors.blue),
+                  const SizedBox(height: 10),
+                  _buildLinkInput('WhatsApp ગ્રુપ લિંક', _whatsappCtrl, Icons.chat, const Color(0xFF25D366)),
+                  const SizedBox(height: 10),
+                  _buildLinkInput('Telegram ચેનલ લિંક', _telegramCtrl, Icons.send, const Color(0xFF0088CC)),
+                  const SizedBox(height: 10),
+                  _buildLinkInput('YouTube ચેનલ લિંક', _youtubeCtrl, Icons.play_circle_fill, Colors.red),
+                  const SizedBox(height: 10),
+                  _buildLinkInput('Instagram પેજ લિંક', _instagramCtrl, Icons.camera_alt, const Color(0xFFE1306C)),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0D253F),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 44),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.save, color: Color(0xFFFFC107)),
+                    label: const Text('લિંક્સ સેવ કરો (Save & Sync to App)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () async {
+                      await _adminData.saveSocialLinks({
+                        'website': _websiteCtrl.text.trim(),
+                        'whatsapp': _whatsappCtrl.text.trim(),
+                        'telegram': _telegramCtrl.text.trim(),
+                        'youtube': _youtubeCtrl.text.trim(),
+                        'instagram': _instagramCtrl.text.trim(),
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            backgroundColor: Color(0xFF2E7D32),
+                            content: Text('✅ تمام સોશિયલ લિંક્સ સેવ થઈ ગઈ છે અને વિદ્યાર્થી એપમાં અપડેટ થઈ ગઈ છે!'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 2. Broadcast Notifications to all students
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            elevation: 2,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.campaign, color: Color(0xFF0D253F)),
+                      SizedBox(width: 8),
+                      Text(
+                        'વિદ્યાર્થીઓને નોટિફિકેશન મોકલો 📢',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0D253F)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'અહીંથી મોકલેલી સૂચના تمام વિદ્યાર્થીઓના ફોન પર તરત જ દેખાશે.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  ),
+                  const Divider(height: 20),
+                  TextField(
+                    controller: _notifTitleCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'નોટિફિકેશન ટાઇટલ',
+                      hintText: 'દા.ત. નવી મોક ટેસ્ટ લાઈવ!',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _notifMsgCtrl,
+                    maxLines: 2,
+                    decoration: InputDecoration(
+                      labelText: 'સંદેશ / વિગત',
+                      hintText: 'દા.ત. કોન્સ્ટેબલ પેપર 02 હવે ઉપલબ્ધ છે...',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      isDense: true,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    value: _selectedNotifType,
+                    decoration: InputDecoration(
+                      labelText: 'નોટિફિકેશન પ્રકાર',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                      isDense: true,
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: 'exam', child: Text('🚨 પરીક્ષા અપડેટ (Exam Alert)')),
+                      DropdownMenuItem(value: 'test', child: Text('📝 નવી મોક ટેસ્ટ (New Test)')),
+                      DropdownMenuItem(value: 'reward', child: Text('🪙 ઓફર / કોઈન્સ (Reward)')),
+                      DropdownMenuItem(value: 'alert', child: Text('📢 સામાન્ય સૂચના (General)')),
+                    ],
+                    onChanged: (val) => setState(() => _selectedNotifType = val!),
+                  ),
+                  const SizedBox(height: 14),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE65100),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 44),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    icon: const Icon(Icons.send),
+                    label: const Text('તમામ વિદ્યાર્થીઓને બ્રોડકાસ્ટ કરો', style: TextStyle(fontWeight: FontWeight.bold)),
+                    onPressed: () async {
+                      if (_notifTitleCtrl.text.trim().isEmpty) return;
+                      await _adminData.broadcastNotification(
+                        _notifTitleCtrl.text.trim(),
+                        _notifMsgCtrl.text.trim(),
+                        _selectedNotifType,
+                      );
+                      _notifTitleCtrl.clear();
+                      _notifMsgCtrl.clear();
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            backgroundColor: Color(0xFF2E7D32),
+                            content: Text('📢 નોટિફિકેશન સફળતાપૂર્વક તમામ વિદ્યાર્થીઓને મોકલાઈ ગઈ છે!'),
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 3. Database Credentials (Masked)
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -744,6 +942,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLinkInput(String label, TextEditingController ctrl, IconData icon, Color color) {
+    return TextField(
+      controller: ctrl,
+      style: const TextStyle(fontSize: 13),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon, color: color, size: 20),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       ),
     );
   }

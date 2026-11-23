@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/exam_category.dart';
 import '../models/user_model.dart';
+import '../services/notification_service.dart';
+import '../services/supabase_service.dart';
 import 'bookmarks_screen.dart';
+import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'refer_screen.dart';
 import 'test_series_screen.dart';
@@ -18,6 +22,47 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _user = UserModel();
   final List<ExamCategory> _categories = ExamCategory.getCategories();
+
+  Map<String, String> _socialLinks = {
+    'website': 'https://gujaratpoliceprep.in',
+    'whatsapp': 'https://chat.whatsapp.com/KhakhiPrep2026',
+    'telegram': 'https://t.me/GujaratPolicePrep',
+    'youtube': 'https://youtube.com/@GujaratPolicePrep',
+    'instagram': 'https://instagram.com/gujaratpoliceprep',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDynamicLinks();
+  }
+
+  void _loadDynamicLinks() async {
+    final links = await SupabaseService().fetchSocialLinks();
+    if (mounted) {
+      setState(() {
+        _socialLinks = links;
+      });
+    }
+  }
+
+  Future<void> _openUrlDirectly(String url, String title) async {
+    try {
+      final uri = Uri.parse(url);
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$title લિંક ઓપન થઈ શકી નથી: $url')),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$title: $url')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,15 +140,45 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.bookmark_outline, color: Colors.white),
-            tooltip: 'સાચવેલા પ્રશ્નો',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const BookmarksScreen()),
-              );
-            },
+          // Notification Bell with dynamic unread counter badge
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications_active_outlined, color: Colors.white),
+                tooltip: 'નોટિફિકેશન & પરીક્ષા એલર્ટ્સ',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NotificationsScreen()),
+                  ).then((_) => setState(() {}));
+                },
+              ),
+              if (NotificationService().unreadCount > 0)
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 1.5),
+                    ),
+                    constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+                    child: Center(
+                      child: Text(
+                        '${NotificationService().unreadCount}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -686,15 +761,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
                 onPressed: () {
-                  _showLinkDialog(
-                    title: 'અધિકૃત વેબસાઇટ',
-                    url: 'https://gujaratpoliceprep.in',
-                    description: 'ગુજરાત પોલીસ કોન્સ્ટેબલ (LRD) અને PSI ભરતીનું સત્તાવાર પોર્ટલ.',
-                    icon: Icons.language,
-                    color: const Color(0xFF0D253F),
+                  _openUrlDirectly(
+                    _socialLinks['website'] ?? 'https://gujaratpoliceprep.in',
+                    'અધિકૃત વેબસાઇટ',
                   );
                 },
-                child: const Text('મુલાકાત લો ↗', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                child: const Text('ઓપન કરો ↗', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               ),
             ],
           ),
@@ -711,7 +783,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 subtitle: 'સ્ટડી ગ્રુપ',
                 icon: Icons.chat_bubble_outline,
                 color: const Color(0xFF25D366),
-                url: 'https://chat.whatsapp.com/KhakhiPrep2026',
+                url: _socialLinks['whatsapp'] ?? 'https://chat.whatsapp.com/KhakhiPrep2026',
                 description: 'રોજિંદા મહત્વપૂર્ણ પ્રશ્નો અને પરીક્ષા ચર્ચા માટે WhatsApp ગ્રુપમાં જોડાઓ.',
               ),
             ),
@@ -723,7 +795,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 subtitle: 'ફ્રી PDF & GK',
                 icon: Icons.send_rounded,
                 color: const Color(0xFF0088CC),
-                url: 'https://t.me/GujaratPolicePrep',
+                url: _socialLinks['telegram'] ?? 'https://t.me/GujaratPolicePrep',
                 description: 'સંપૂર્ણ મોક ટેસ્ટ પેપર PDF અને કરંટ અફેર્સ માટે ટેલિગ્રામ ચેનલ સબ્સ્ક્રાઇબ કરો.',
               ),
             ),
@@ -739,7 +811,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 subtitle: 'વિડિયો લેક્ચર્સ',
                 icon: Icons.play_circle_filled,
                 color: const Color(0xFFFF0000),
-                url: 'https://youtube.com/@GujaratPolicePrep',
+                url: _socialLinks['youtube'] ?? 'https://youtube.com/@GujaratPolicePrep',
                 description: 'કાયદો, બંધારણ અને ગણિત-રીઝનિંગની શોર્ટ ટ્રીક્સના વિડીયો જુઓ.',
               ),
             ),
@@ -751,7 +823,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 subtitle: 'ડેઇલી ક્વિઝ',
                 icon: Icons.camera_alt_outlined,
                 color: const Color(0xFFE1306C),
-                url: 'https://instagram.com/gujaratpoliceprep',
+                url: _socialLinks['instagram'] ?? 'https://instagram.com/gujaratpoliceprep',
                 description: 'રોજિંદા કરંટ અફેર્સ અને GK ની શોર્ટ રીલ્સ જુઓ.',
               ),
             ),
@@ -775,13 +847,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
         onTap: () {
-          _showLinkDialog(
-            title: title,
-            url: url,
-            description: description,
-            icon: icon,
-            color: color,
-          );
+          _openUrlDirectly(url, title);
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),

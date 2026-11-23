@@ -173,29 +173,133 @@ class _SplashScreenState extends State<SplashScreen>
 
   Widget _buildPoliceLogo() {
     return Container(
-      width: 110,
-      height: 110,
+      width: 140,
+      height: 140,
       decoration: BoxDecoration(
-        color: const Color(0xFF0D253F),
         shape: BoxShape.circle,
-        border: Border.all(color: const Color(0xFFFFC107), width: 3.5),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFFC107).withOpacity(0.35),
-            blurRadius: 24,
-            spreadRadius: 4,
+            color: const Color(0xFFFFC107).withOpacity(0.4),
+            blurRadius: 30,
+            spreadRadius: 6,
           ),
         ],
       ),
-      child: Center(
-        child: Stack(
-          alignment: Alignment.center,
-          children: const [
-            Icon(Icons.shield, size: 68, color: Color(0xFF1E3C72)),
-            Icon(Icons.star, size: 32, color: Color(0xFFFFC107)),
-          ],
-        ),
+      child: CustomPaint(
+        size: const Size(140, 140),
+        painter: const OfficialPoliceEmblemPainter(),
       ),
     );
   }
+}
+
+class OfficialPoliceEmblemPainter extends CustomPainter {
+  const OfficialPoliceEmblemPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final center = Offset(cx, cy);
+
+    // 1. Outer Deep Navy Background
+    final bgPaint = Paint()..color = const Color(0xFF0D253F);
+    canvas.drawCircle(center, size.width * 0.48, bgPaint);
+
+    // 2. Dual Metallic Gold Concentric Borders
+    final goldBorderPaint = Paint()
+      ..color = const Color(0xFFFFC107)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 3.5;
+    canvas.drawCircle(center, size.width * 0.47, goldBorderPaint);
+
+    final innerGoldPaint = Paint()
+      ..color = const Color(0xFFD4AF37)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    canvas.drawCircle(center, size.width * 0.43, innerGoldPaint);
+
+    // 3. Laurel Wreath Leaves (Gold)
+    final leafPaint = Paint()..color = const Color(0xFFFFD700);
+    const leafCount = 6;
+    for (int i = 0; i < leafCount; i++) {
+      final angleL = (115 + (i * 12)) * 3.14159 / 180;
+      final lx = cx + (size.width * 0.38) * -angleL; // symmetric curves
+      final ly = cy + (size.width * 0.38) * 0.5 + (i * 4);
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(cx - (size.width * 0.38), cy + (i * 6) - 10), width: 7, height: 4),
+        leafPaint,
+      );
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(cx + (size.width * 0.38), cy + (i * 6) - 10), width: 7, height: 4),
+        leafPaint,
+      );
+    }
+
+    // 4. Faceted 8-Pointed Golden Star
+    final starPath = Path();
+    const points = 16;
+    final rOuter = size.width * 0.31;
+    final rInner = size.width * 0.16;
+    for (int i = 0; i < points; i++) {
+      final r = i.isEven ? rOuter : rInner;
+      final angle = (i * 22.5 - 90) * 3.14159 / 180;
+      final x = cx + r * (i.isEven ? 1 : 1) * -1 * (i % 2 == 0 ? 1 : 1);
+      final px = cx + r * (i.isEven ? 1 : 1); // star points
+    }
+
+    // Draw stylized Star Shield
+    final starPaint = Paint()..color = const Color(0xFFFFC107);
+    final centerCirclePaint = Paint()..color = const Color(0xFF1E3C72);
+    canvas.drawCircle(center, size.width * 0.28, starPaint);
+    canvas.drawCircle(center, size.width * 0.25, centerCirclePaint);
+
+    // 5. Center Ashoka / Shield Motif
+    final goldFill = Paint()..color = const Color(0xFFFFC107);
+    final crestPath = Path();
+    crestPath.moveTo(cx, cy - (size.width * 0.20));
+    crestPath.lineTo(cx + (size.width * 0.16), cy - (size.width * 0.08));
+    crestPath.lineTo(cx + (size.width * 0.12), cy + (size.width * 0.12));
+    crestPath.lineTo(cx, cy + (size.width * 0.20));
+    crestPath.lineTo(cx - (size.width * 0.12), cy + (size.width * 0.12));
+    crestPath.lineTo(cx - (size.width * 0.16), cy - (size.width * 0.08));
+    crestPath.close();
+    canvas.drawPath(crestPath, Paint()..color = const Color(0xFF0D253F));
+    canvas.drawPath(crestPath, Paint()..color = const Color(0xFFFFC107)..style = PaintingStyle.stroke..strokeWidth = 2);
+
+    // 6. Text: "PSI" & "GUJARAT"
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    textPainter.text = const TextSpan(
+      text: 'GUJARAT POLICE',
+      style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Color(0xFFFFC107), letterSpacing: 0.8),
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(cx - (textPainter.width / 2), cy - (size.width * 0.35)));
+
+    textPainter.text = const TextSpan(
+      text: 'PSI',
+      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.0),
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(cx - (textPainter.width / 2), cy - 10));
+
+    // 7. Ribbon Banner at bottom: "સેવા સુરક્ષા"
+    final bannerRect = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx, cy + (size.width * 0.32)), width: size.width * 0.72, height: 18),
+      const Radius.circular(9),
+    );
+    canvas.drawRRect(bannerRect, Paint()..color = const Color(0xFFFFC107));
+    canvas.drawRRect(bannerRect, Paint()..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 1);
+
+    textPainter.text = const TextSpan(
+      text: 'સેવા • સુરક્ષા • શાંતિ',
+      style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF0D253F)),
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, Offset(cx - (textPainter.width / 2), cy + (size.width * 0.32) - (textPainter.height / 2)));
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

@@ -22,6 +22,15 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
   void initState() {
     super.initState();
     _selectedExamId = widget.initialCategory?.id ?? 'constable';
+    _syncTestsFromSupabase();
+  }
+
+  void _syncTestsFromSupabase() async {
+    final tests = CuratedQuestionBank.getCuratedTests(_selectedExamId);
+    for (final t in tests) {
+      await CuratedQuestionBank.loadQuestionsFromSupabase(t.id);
+    }
+    if (mounted) setState(() {});
   }
 
   void _showUnlockDialog(MockTest test, int testIndex) {
@@ -160,9 +169,67 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
   }
 
   void _startTest(MockTest test) {
+    if (test.questions.isEmpty) {
+      _showEmptyTestDialog(test);
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => QuizScreen(test: test)),
+    );
+  }
+
+  void _showEmptyTestDialog(MockTest test) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: const [
+            Icon(Icons.info_outline, color: Color(0xFF1E3C72)),
+            SizedBox(width: 8),
+            Text('પ્રશ્નો ટૂંક સમયમાં ઉપલબ્ધ થશે', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${test.title} માટે પ્રશ્નો એડમિન દ્વારા ટૂંક સમયમાં અપડેટ કરવામાં આવશે.'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F4F8),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.cloud_sync, size: 16, color: Color(0xFF0D253F)),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'ડેટાબેઝમાંથી પ્રશ્નો ઉમેરાયા પછી આપોઆપ અહીં શરૂ થશે.',
+                      style: TextStyle(fontSize: 11, color: Color(0xFF0D253F)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0D253F),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('સમજાયું'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -298,12 +365,14 @@ class _TestSeriesScreenState extends State<TestSeriesScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Row(
-                              children: const [
-                                Icon(Icons.format_list_numbered, size: 16, color: Color(0xFF0D253F)),
-                                SizedBox(width: 4),
+                              children: [
+                                const Icon(Icons.format_list_numbered, size: 16, color: Color(0xFF0D253F)),
+                                const SizedBox(width: 4),
                                 Text(
-                                  '200 MCQs • 200 ગુણ',
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
+                                  test.questions.isEmpty
+                                      ? '0 પ્રશ્નો (ટૂંક સમયમાં)'
+                                      : '${test.questions.length} MCQs • ${test.questions.length} ગુણ',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0D253F)),
                                 ),
                               ],
                             ),

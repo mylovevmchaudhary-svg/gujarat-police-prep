@@ -130,6 +130,48 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.test.questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF4F6F9),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0D253F),
+          title: Text(widget.test.title, style: const TextStyle(color: Colors.white, fontSize: 16)),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.assignment_outlined, size: 72, color: Colors.grey),
+                const SizedBox(height: 16),
+                const Text(
+                  'આ મોક ટેસ્ટમાં હજુ પ્રશ્નો ઉમેરાયા નથી.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'એડમિન દ્વારા પ્રશ્નો ઉમેરવામાં આવ્યા પછી અહીં આપોઆપ ટેસ્ટ શરૂ થશે.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0D253F),
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('પાછા જાઓ'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final currentQuestion = widget.test.questions[_currentQuestionIndex];
     final selectedOption = _selectedAnswers[_currentQuestionIndex];
     final isTimerLow = _remainingSeconds < 600; // less than 10 mins

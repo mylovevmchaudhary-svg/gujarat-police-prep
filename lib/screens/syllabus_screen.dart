@@ -45,13 +45,52 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
     final tests = CuratedQuestionBank.getCuratedTests(
       _selectedExam == ExamType.psi ? 'psi' : 'constable',
     );
-    final baseTest = tests.isNotEmpty ? tests.first : MockTest(
+    List<Question> matchingQuestions = [];
+    for (final t in tests) {
+      matchingQuestions.addAll(t.questions.where((q) =>
+          q.subject.toLowerCase().contains(topic.nameGujarati.toLowerCase()) ||
+          q.question.toLowerCase().contains(topic.nameGujarati.toLowerCase())));
+    }
+
+    if (matchingQuestions.isEmpty) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: const [
+              Icon(Icons.menu_book, color: Color(0xFF0D253F)),
+              SizedBox(width: 8),
+              Text('પ્રેક્ટિસ પ્રશ્નો', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          content: Text(
+            '${topic.nameGujarati} માટેના MCQ પ્રશ્નો એડમિન દ્વારા ટૂંક સમયમાં અપલોડ કરવામાં આવશે. પ્રશ્નો ઉમેરાયા પછી આપ અહીં પ્રેક્ટિસ કરી શકશો.',
+            style: const TextStyle(fontSize: 13),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D253F),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('સમજાયું'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final baseTest = MockTest(
       id: 'practice_${topic.id}',
       title: '${topic.nameGujarati} - પ્રેક્ટિસ',
       description: 'ટોપિક આધારિત મોક ટેસ્ટ',
       category: 'Practice',
       durationMinutes: 45,
-      questions: [],
+      questions: matchingQuestions,
     );
 
     Navigator.push(

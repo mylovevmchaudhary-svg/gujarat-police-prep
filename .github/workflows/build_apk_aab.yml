@@ -70,23 +70,25 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v3.2.0-latest
-          name: "PSI Mock Test & Admin Console v3.2.0 (Play Store Ready & Secure)"
+          tag_name: v3.4.0-latest
+          name: "PSI Mock Test & Admin Console v3.4.0 (Authentic Police Badge, Real Notifications & Supabase Sync)"
           body: |
-            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition)
+            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.4.0
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.2.0-latest/PSI_Mock_Test_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.2.0-latest/PSI_Mock_Test_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.2.0-latest/PSI_Mock_Test_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.4.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.4.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.4.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### 🛡️ Security & Clean Architecture Highlights:
-            - 🚫 **100% Pure Student App:** Zero admin screens, buttons, or links inside the student app. Ready for Google Play Store upload without any risk of rejection!
-            - 🔐 **Password-Protected Admin Console:** Standalone Admin App requires `admin@police.gov.in` and `Police@2026`.
-            - 🛡️ **Anti-Hack / Masked Keys:** Raw API keys and passwords are encrypted and masked (`••••••••`).
-            - 👥 **Student & Question Management:** Admin can add/edit/delete individual MCQs, bulk upload via Excel, and manage student coin balances.
-            - ⚡ **Supabase Live Synchronization:** Real-time data sync with `https://sbujnpiaxyjtjgsszpdn.supabase.co`.
-            - 🏷️ **Custom Launcher Icons:** Official Gold & Navy Badge for both apps.
+            ### 🛡️ What's New in v3.4.0:
+            - 🎖️ **Authentic Gujarat Police Emblem:** Regal Gold and Deep Navy Blue insignia featuring Ashoka 3-Lions crest, 8-point starburst, laurel wreath, and "સેવા સુરક્ષા શાંતિ" motto across splash screen and app icons.
+            - 🗑️ **Zero Hardcoded Dummy Questions:** All sample dummy MCQs purged from tests and syllabus. 100% database driven from Supabase or Admin Console.
+            - 🔔 **Mobile Notification System:** Replaced bookmark icon with real-time notification bell and unread badge. Heads-up mobile alert banners.
+            - 🌐 **Direct Website & Community Launch:** Website button opens directly in browser without popup confirmation.
+            - 🎛️ **Admin Social Media Links Manager:** Dedicated editor in Admin Console to save custom URLs (Website, WhatsApp, Telegram, YouTube, Instagram) dynamically synced to students.
+            - 📢 **Admin Notification Broadcast:** Admin can broadcast instant notifications to all student apps.
+            - 🔐 **Password-Protected Admin Console:** Login with `admin@police.gov.in` and `Police@2026`.
+            - 🛡️ **Google Play Store Compliant:** Student app is 100% clean with zero admin code, zero test tokens, and hardened against security checks.
           files: |
             build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk
