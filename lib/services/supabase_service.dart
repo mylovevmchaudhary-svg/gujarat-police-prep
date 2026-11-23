@@ -2,21 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 import '../models/quiz_model.dart';
 import '../models/user_model.dart';
+import 'security_vault.dart';
 
 class SupabaseService {
   static final SupabaseService _instance = SupabaseService._internal();
   factory SupabaseService() => _instance;
   SupabaseService._internal();
 
-  // Supabase Live Project Credentials
-  static String supabaseUrl = 'https://sbujnpiaxyjtjgsszpdn.supabase.co';
-  static String supabaseAnonKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNidWpucGlheHlqdGpnc3N6cGRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyNDk3MDQsImV4cCI6MjExMDgyNTcwNH0.crnzNtr5Kf7XM62E9CwjFua4kBzJ8U5e1UIKG6qNs0I';
-
-  static void updateCredentials(String url, String key) {
-    supabaseUrl = url;
-    supabaseAnonKey = key;
-  }
+  // Dynamic Cryptographic Vault Credentials (ZERO plaintext in binary)
+  static String get supabaseUrl => SecurityVault.supabaseUrl;
+  static String get supabaseAnonKey => SecurityVault.supabaseAnonKey;
 
   final UserModel _user = UserModel();
 

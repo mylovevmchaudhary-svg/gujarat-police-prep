@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'security_vault.dart';
 
 class AdminDataManager {
   static final AdminDataManager _instance = AdminDataManager._internal();
@@ -8,10 +9,9 @@ class AdminDataManager {
     _initEmptyQuestions();
   }
 
-  // Supabase Configuration
-  String supabaseUrl = 'https://sbujnpiaxyjtjgsszpdn.supabase.co';
-  String supabaseKey =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNidWpucGlheHlqdGpnc3N6cGRuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyNDk3MDQsImV4cCI6MjExMDgyNTcwNH0.crnzNtr5Kf7XM62E9CwjFua4kBzJ8U5e1UIKG6qNs0I';
+  // Dynamic Cryptographic Vault Credentials (ZERO plaintext in binary)
+  String get supabaseUrl => SecurityVault.supabaseUrl;
+  String get supabaseKey => SecurityVault.supabaseAnonKey;
   bool isConnectedToSupabase = true;
   bool isLoading = false;
 

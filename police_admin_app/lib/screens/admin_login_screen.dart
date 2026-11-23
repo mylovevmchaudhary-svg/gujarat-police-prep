@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../security_vault.dart';
 import 'admin_dashboard.dart';
 
 class AdminLoginScreen extends StatefulWidget {
@@ -23,7 +24,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       return;
     }
 
-    if ((email == 'admin@police.gov.in' || email == 'admin@khakhi.in') && pass == 'Police@2026') {
+    if (SecurityVault.verifyAdminCredentials(email, pass)) {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const AdminDashboardScreen()),
