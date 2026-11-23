@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/quiz_model.dart';
+import '../models/user_model.dart';
 import 'quiz_result_screen.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -74,6 +75,12 @@ class _QuizScreenState extends State<QuizScreen> {
       test: widget.test,
       selectedAnswers: _selectedAnswers,
       timeSpentSeconds: _timeSpentSeconds,
+    );
+
+    // Record real dynamic test score & attempts
+    UserModel().recordTestCompletion(
+      score: result.correctCount,
+      totalQuestions: widget.test.questions.length,
     );
 
     Navigator.pushReplacement(

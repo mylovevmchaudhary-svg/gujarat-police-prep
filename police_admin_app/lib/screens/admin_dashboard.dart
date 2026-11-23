@@ -18,8 +18,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
 
   // Excel / CSV Controller
   final _csvController = TextEditingController();
-  int _uploadedCount = 0;
-  bool _uploadSuccess = false;
 
   // Search in questions
   String _questionSearch = '';
@@ -50,6 +48,21 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     _telegramCtrl = TextEditingController(text: _adminData.socialLinks['telegram'] ?? 'https://t.me/GujaratPolicePrep');
     _youtubeCtrl = TextEditingController(text: _adminData.socialLinks['youtube'] ?? 'https://youtube.com/@GujaratPolicePrep');
     _instagramCtrl = TextEditingController(text: _adminData.socialLinks['instagram'] ?? 'https://instagram.com/gujaratpoliceprep');
+
+    // Automatically load all real data from Supabase
+    _fetchRealData();
+  }
+
+  Future<void> _fetchRealData() async {
+    await _adminData.loadAllData();
+    if (mounted) {
+      _websiteCtrl.text = _adminData.socialLinks['website'] ?? _websiteCtrl.text;
+      _whatsappCtrl.text = _adminData.socialLinks['whatsapp'] ?? _whatsappCtrl.text;
+      _telegramCtrl.text = _adminData.socialLinks['telegram'] ?? _telegramCtrl.text;
+      _youtubeCtrl.text = _adminData.socialLinks['youtube'] ?? _youtubeCtrl.text;
+      _instagramCtrl.text = _adminData.socialLinks['instagram'] ?? _instagramCtrl.text;
+      setState(() {});
+    }
   }
 
   @override
@@ -65,67 +78,40 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     super.dispose();
   }
 
-  // Withdrawal Requests list managed by Admin
-  final List<Map<String, dynamic>> _withdrawals = [
-    {
-      'id': 'wd_101',
-      'studentName': 'રમેશ ચૌધરી',
-      'email': 'ramesh.chaudhary@gmail.com',
-      'amount': '₹50.00',
-      'coins': 500,
-      'upi': '9876543210@paytm',
-      'status': 'પેન્ડિંગ (Pending)',
-      'isPending': true,
-      'date': 'આજે 12:45 PM',
-    },
-    {
-      'id': 'wd_102',
-      'studentName': 'ભાવિક પટેલ',
-      'email': 'bhavik.patel@gmail.com',
-      'amount': '₹20.00',
-      'coins': 200,
-      'upi': 'bhavik@oksbi',
-      'status': 'મંજૂર થયેલ (Paid) ✅',
-      'isPending': false,
-      'date': 'ગઈકાલે',
-    },
-    {
-      'id': 'wd_103',
-      'studentName': 'પૂજા ઠાકોર',
-      'email': 'pooja.thakor@gmail.com',
-      'amount': '₹100.00',
-      'coins': 1000,
-      'upi': 'poojathakor@ybl',
-      'status': 'પેન્ડિંગ (Pending)',
-      'isPending': true,
-      'date': 'આજે 02:15 PM',
-    },
-  ];
-
-  void _approveWithdrawal(int index) {
-    setState(() {
-      _withdrawals[index]['status'] = 'મંજૂર થયેલ (Paid) ✅';
-      _withdrawals[index]['isPending'] = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: const Color(0xFF2E7D32),
-        content: Text('${_withdrawals[index]['studentName']} નો ${_withdrawals[index]['amount']} નો ઉપાડ મંજૂર થયો!'),
-      ),
-    );
+  void _approveWithdrawal(int index) async {
+    final list = _adminData.withdrawals;
+    if (index >= 0 && index < list.length) {
+      final wd = list[index];
+      final id = wd['id']?.toString() ?? '';
+      await _adminData.updateWithdrawalStatus(id, 'approved');
+      setState(() {});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF2E7D32),
+            content: Text('${wd['studentName']} નો ${wd['amount']} નો ઉપાડ મંજૂર થયો! ✅'),
+          ),
+        );
+      }
+    }
   }
 
-  void _rejectWithdrawal(int index) {
-    setState(() {
-      _withdrawals[index]['status'] = 'અસ્વીકાર (Rejected) ❌';
-      _withdrawals[index]['isPending'] = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: Colors.redAccent,
-        content: Text('${_withdrawals[index]['studentName']} નો ઉપાડ રદ થયો અને કોઈન્સ રિફંડ થયા.'),
-      ),
-    );
+  void _rejectWithdrawal(int index) async {
+    final list = _adminData.withdrawals;
+    if (index >= 0 && index < list.length) {
+      final wd = list[index];
+      final id = wd['id']?.toString() ?? '';
+      await _adminData.updateWithdrawalStatus(id, 'rejected');
+      setState(() {});
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text('${wd['studentName']} નો ઉપાડ રદ થયો. ❌'),
+          ),
+        );
+      }
+    }
   }
 
   void _openAddQuestionDialog({Map<String, dynamic>? editQuestion, int? editIndex}) {
@@ -282,6 +268,24 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.sync, color: Color(0xFFFFC107), size: 22),
+            tooltip: 'ડેટા રિફ્રેશ કરો (Supabase Live Sync)',
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Supabase માંથી લાઈવ ડેટા લોડ થઈ રહ્યો છે...')),
+              );
+              await _fetchRealData();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    backgroundColor: Color(0xFF2E7D32),
+                    content: Text('લાઈવ ડેટા સફળતાપૂર્વક અપડેટ થયો! ✅'),
+                  ),
+                );
+              }
+            },
+          ),
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -348,71 +352,87 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
   }
 
-  // TAB 0: OVERVIEW & STATS
+  // TAB 0: OVERVIEW & STATS (100% REAL SUPABASE DATA)
   Widget _buildOverviewTab() {
-    final pendingCount = _withdrawals.where((w) => w['isPending'] == true).length;
+    final pendingCount = _adminData.withdrawals.where((w) => w['isPending'] == true).length;
     final totalQuestions = _adminData.testQuestions.values.fold<int>(0, (sum, list) => sum + list.length);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('સિસ્ટમ આંકડા & ઓવરવ્યૂ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0D253F))),
-          const SizedBox(height: 12),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 1.35,
-            children: [
-              _buildMetricCard('કુલ વિદ્યાર્થીઓ', '${_adminData.students.length * 2970}+', Icons.people, const Color(0xFF1976D2)),
-              _buildMetricCard('સક્રિય ટેસ્ટ્સ', '${_adminData.tests.length}', Icons.quiz, const Color(0xFF6A1B9A)),
-              _buildMetricCard('પ્રશ્નો બેંક', '$totalQuestions+ MCQs', Icons.menu_book, const Color(0xFF2E7D32)),
-              _buildMetricCard('પેન્ડિંગ ઉપાડ', '$pendingCount વિનંતીઓ', Icons.payments, const Color(0xFFE65100)),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Security & Cloud Status Card
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFF2E7D32).withOpacity(0.3)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Row(
-                  children: [
-                    Icon(Icons.verified_user, color: Color(0xFF2E7D32), size: 18),
-                    SizedBox(width: 6),
-                    Text('Supabase Realtime Sync & RLS Enforced', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E7D32), fontSize: 13)),
-                  ],
+    return RefreshIndicator(
+      onRefresh: _fetchRealData,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('સિસ્ટમ આંકડા & ઓવરવ્યૂ', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0D253F))),
+                IconButton(
+                  icon: const Icon(Icons.refresh, size: 20, color: Color(0xFF0D253F)),
+                  tooltip: 'રીફ્રેશ',
+                  onPressed: _fetchRealData,
                 ),
-                SizedBox(height: 6),
-                Text('• વિદ્યાર્થીઓ માત્ર પોતાના એકાઉન્ટનો ડેટા જોઈ શકે છે.'),
-                Text('• કોઈપણ પ્રશ્ન એડમિન એપમાંથી એડ/ડીલીટ કરવાથી તમામ વિદ્યાર્થીઓના ફોનમાં લાઈવ અપડેટ થશે.'),
-                Text('• વિદ્યાર્થી એપમાં એડમિન પોર્ટલ સંપૂર્ણપણે અદ્રશ્ય છે.'),
               ],
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 1.35,
+              children: [
+                _buildMetricCard('કુલ વિદ્યાર્થીઓ', '${_adminData.students.length} રજીસ્ટર્ડ', Icons.people, const Color(0xFF1976D2)),
+                _buildMetricCard('સક્રિય ટેસ્ટ્સ', '${_adminData.tests.length}', Icons.quiz, const Color(0xFF6A1B9A)),
+                _buildMetricCard('પ્રશ્નો બેંક', '$totalQuestions MCQs', Icons.menu_book, const Color(0xFF2E7D32)),
+                _buildMetricCard('પેન્ડિંગ ઉપાડ', '$pendingCount વિનંતીઓ', Icons.payments, const Color(0xFFE65100)),
+              ],
+            ),
+            const SizedBox(height: 18),
+
+            // Security & Cloud Status Card
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF2E7D32).withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Row(
+                    children: [
+                      Icon(Icons.verified_user, color: Color(0xFF2E7D32), size: 18),
+                      SizedBox(width: 6),
+                      Text('Supabase Realtime Sync & RLS Enforced', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E7D32), fontSize: 13)),
+                    ],
+                  ),
+                  SizedBox(height: 6),
+                  Text('• 100% રિયલ ડેટા: તમામ વિદ્યાર્થીઓ, પ્રશ્નો અને પેમેન્ટ્સ Supabase ક્લાઉડમાંથી સીધા જોડાયેલા છે.'),
+                  Text('• વિદ્યાર્થી એપમાં એડમિન પોર્ટલ સંપૂર્ણપણે અદ્રશ્ય છે.'),
+                  Text('• એડમિન પેનલમાંથી કોઈન્સ અને પ્રશ્નોમાં કરેલા ફેરફારો તાત્કાલિક સેવ થાય છે.'),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // TAB 1: STUDENTS MANAGEMENT
+  // TAB 1: REAL STUDENTS MANAGEMENT
   Widget _buildStudentsTab() {
     final filtered = _adminData.students.where((s) {
       if (_studentSearch.isEmpty) return true;
       final q = _studentSearch.toLowerCase();
-      return (s['name'] as String).toLowerCase().contains(q) || (s['email'] as String).toLowerCase().contains(q);
+      final name = (s['name'] ?? '').toString().toLowerCase();
+      final email = (s['email'] ?? '').toString().toLowerCase();
+      return name.contains(q) || email.contains(q);
     }).toList();
 
     return Column(
@@ -433,73 +453,97 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ),
         Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: filtered.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, idx) {
-              final student = filtered[idx];
-              final isActive = student['isActive'] as bool;
+          child: filtered.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.people_outline, size: 56, color: Colors.grey[400]),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'હજુ સુધી કોઈ વિદ્યાર્થી નોંધાયેલ નથી.',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0D253F)),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'વિદ્યાર્થીઓ જ્યારે એપ્લિકેશનમાં સાઇન-અપ કરશે ત્યારે તેમની પ્રોફાઇલ અને કોઈન્સ Supabase માંથી અહીં લાઈવ દેખાશે.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  itemBuilder: (context, idx) {
+                    final student = filtered[idx];
 
-              return Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 1,
-                child: Padding(
-                  padding: const EdgeInsets.all(14),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: const Color(0xFF0D253F).withOpacity(0.1),
-                        child: const Icon(Icons.person, color: Color(0xFF0D253F)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    return Card(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 1,
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Row(
                           children: [
-                            Text(student['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                            Text(student['email'], style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                            const SizedBox(height: 4),
-                            Text('જોડાયા: ${student['joinedDate']} • રેફરલ્સ: ${student['referrals']}', style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                            CircleAvatar(
+                              backgroundColor: const Color(0xFF0D253F).withOpacity(0.1),
+                              child: const Icon(Icons.person, color: Color(0xFF0D253F)),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(student['name'] ?? 'વિદ્યાર્થી', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                  Text(student['email'] ?? '', style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                                  const SizedBox(height: 4),
+                                  Text('જોડાયા: ${student['joinedDate']} • રેફરલ્સ: ${student['referrals'] ?? 0}', style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(6)),
+                                  child: Text('🪙 ${student['coins']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFF57F17))),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    InkWell(
+                                      onTap: () {
+                                        final realIdx = _adminData.students.indexOf(student);
+                                        setState(() => _adminData.updateStudentCoins(realIdx, 50));
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('+50 કોઈન્સ ઉમેરાયા! (Supabase Synced)')));
+                                      },
+                                      child: const Icon(Icons.add_circle, color: Color(0xFF2E7D32), size: 20),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    InkWell(
+                                      onTap: () {
+                                        final realIdx = _adminData.students.indexOf(student);
+                                        setState(() => _adminData.updateStudentCoins(realIdx, -50));
+                                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('-50 કોઈન્સ કપાયા. (Supabase Synced)')));
+                                      },
+                                      child: const Icon(Icons.remove_circle, color: Colors.redAccent, size: 20),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(color: const Color(0xFFFFF8E1), borderRadius: BorderRadius.circular(6)),
-                            child: Text('🪙 ${student['coins']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFFF57F17))),
-                          ),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              InkWell(
-                                onTap: () {
-                                  setState(() => _adminData.updateStudentCoins(idx, 50));
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('+50 કોઈન્સ ઉમેરાયા!')));
-                                },
-                                child: const Icon(Icons.add_circle, color: Color(0xFF2E7D32), size: 20),
-                              ),
-                              const SizedBox(width: 8),
-                              InkWell(
-                                onTap: () {
-                                  setState(() => _adminData.updateStudentCoins(idx, -50));
-                                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('-50 કોઈન્સ કપાયા.')));
-                                },
-                                child: const Icon(Icons.remove_circle, color: Colors.redAccent, size: 20),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
@@ -514,7 +558,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final filteredQuestions = questions.where((q) {
       if (_questionSearch.isEmpty) return true;
       final query = _questionSearch.toLowerCase();
-      return (q['question'] as String).toLowerCase().contains(query) || (q['subject'] as String).toLowerCase().contains(query);
+      final qText = (q['question'] ?? '').toString().toLowerCase();
+      final subj = (q['subject'] ?? '').toString().toLowerCase();
+      return qText.contains(query) || subj.contains(query);
     }).toList();
 
     return Column(
@@ -674,13 +720,39 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     );
   }
 
-  // TAB 3: WITHDRAWALS
+  // TAB 3: REAL WITHDRAWALS (100% SUPABASE DRIVEN)
   Widget _buildWithdrawalsTab() {
+    final list = _adminData.withdrawals;
+    if (list.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.payments_outlined, size: 56, color: Colors.grey[400]),
+              const SizedBox(height: 12),
+              const Text(
+                'હજુ સુધી કોઈ ઉપાડ વિનંતી નથી.',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0D253F)),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'વિદ્યાર્થીઓ જ્યારે એપ્લિકેશનમાંથી પૈસા ઉપાડવા માટે વિનંતી કરશે ત્યારે તે અહીં દેખાશે.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: _withdrawals.length,
+      itemCount: list.length,
       itemBuilder: (context, idx) {
-        final wd = _withdrawals[idx];
+        final wd = list[idx];
         final isPending = wd['isPending'] == true;
 
         return Card(
@@ -694,8 +766,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(wd['studentName'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    Text(wd['amount'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2E7D32))),
+                    Text(wd['studentName'] ?? 'વિદ્યાર્થી', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(wd['amount'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: Color(0xFF2E7D32))),
                   ],
                 ),
                 Text('UPI ID: ${wd['upi']}', style: TextStyle(fontSize: 12, color: Colors.grey[800], fontWeight: FontWeight.w600)),
@@ -722,7 +794,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ],
                   )
                 else
-                  Text(wd['status'], style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                  Text(wd['status'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
               ],
             ),
           ),
@@ -827,7 +899,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'અહીંથી મોકલેલી સૂચના تمام વિદ્યાર્થીઓના ફોન પર તરત જ દેખાશે.',
+                    'અહીંથી મોકલેલી સૂચના तमाम વિદ્યાર્થીઓના ફોન પર તરત જ દેખાશે.',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const Divider(height: 20),

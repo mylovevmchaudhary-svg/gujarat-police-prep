@@ -108,11 +108,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildStatColumn('ટેસ્ટ આપેલ', '12'),
+                        _buildStatColumn('ટેસ્ટ આપેલ', '${_user.testsTaken}'),
                         _buildDivider(),
-                        _buildStatColumn('સરેરાશ સ્કોર', '142/200'),
+                        _buildStatColumn('સરેરાશ સ્કોર', _user.testsTaken > 0 ? '${(_user.totalCorrectAnswers / _user.testsTaken).round()}/200' : '0/200'),
                         _buildDivider(),
-                        _buildStatColumn('સ્ટ્રીક 🔥', '7 દિવસ'),
+                        _buildStatColumn('સ્ટ્રીક 🔥', '${_user.streakDays} દિવસ'),
                         _buildDivider(),
                         ValueListenableBuilder<int>(
                           valueListenable: _user.coinsNotifier,

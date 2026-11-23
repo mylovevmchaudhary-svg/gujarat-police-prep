@@ -70,23 +70,23 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v3.5.0-latest
-          name: "PSI Mock Test & Admin Console v3.5.0 (Supabase Real Auth, Reactive Wallet & AdMob Rewarded Ads)"
+          tag_name: v3.6.0-latest
+          name: "PSI Mock Test & Admin Console v3.6.0 (100% Real Supabase Sync, Zero Fake Data & Live Cashout)"
           body: |
-            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.5.0
+            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.6.0
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.5.0-latest/PSI_Mock_Test_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.5.0-latest/PSI_Mock_Test_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.5.0-latest/PSI_Mock_Test_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.6.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.6.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.6.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### 🛡️ What's New in v3.5.0:
-            - 🔐 **Real Supabase Cloud Authentication:** Live signup and login hooked directly to Supabase (`/auth/v1/signup` and `/auth/v1/token`), instantly registering users into Supabase Auth & public.profiles tables.
-            - 🪙 **Persistent & Real-time Reactive Wallet:** Coins persist between app restarts and sync in real time across Home, Test Series, and Wallet tabs using reactive ValueNotifiers.
-            - 📺 **Google AdMob Rewarded Test Ads:** Full interactive AdMob Rewarded Video Ad player (Test Unit: `ca-app-pub-3940256099942544/5224354917`) with countdown, early exit protection, and coin rewards.
-            - 🗄️ **Zero Hardcoded Dummy Notifications:** Notifications are 100% cloud driven from Supabase with clean empty state when no announcements are present.
-            - 🎖️ **Authentic Gujarat Police Emblem:** Regal Gold and Navy insignia on splash screen and launcher icons.
-            - 🎛️ **Admin Console Links & Broadcast Manager:** Update custom social links and broadcast push notifications to students.
+            ### 🛡️ What's New in v3.6.0:
+            - 🚫 **100% Zero Dummy Data Purged:** Completely eliminated all hardcoded/fake mock students ('રમેશ ચૌધરી', 'ભાવિક પટેલ'), dummy withdrawals ('wd_101', 'wd_102'), dummy referrals, and hardcoded test statistics ('12', '142/200', '7 દિવસ').
+            - 📊 **Real Live Supabase Cloud Sync:** Admin panel directly fetches real registered users from `public.profiles`, live withdrawal cashout requests from `public.withdrawals`, and real questions from `public.questions`.
+            - 🪙 **Live Real-time Coin & Profile Sync:** Student signups, coins earned via daily bonus or AdMob ads, and UPI cashout requests are persistently stored locally and synced directly to Supabase cloud.
+            - 🔄 **One-Touch Admin Sync:** PSI Admin Console features live sync button and pull-to-refresh to fetch new registrations, pending payments, and MCQs instantaneously.
+            - 📺 **AdMob Rewarded Video Test Ads:** Official Google test unit integration (`ca-app-pub-3940256099942544/5224354917`) with countdown, anti-skip verification, and coin reward callback.
+            - 🔒 **Absolute Student App Isolation:** Zero admin controls, zero database credentials exposed in student app. Admin panel is protected with official credentials.
           files: |
             build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk
             build/app/outputs/flutter-apk/Gujarat_Police_Student_App.apk

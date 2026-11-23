@@ -344,10 +344,17 @@ class _WalletScreenState extends State<WalletScreen> {
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: Colors.grey.withOpacity(0.15)),
                 ),
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _user.coinHistory.length,
+                child: _user.coinHistory.isEmpty
+                    ? const Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(
+                          child: Text('હજુ સુધી કોઈ કોઈન્સ ટ્રાન્ઝેક્શન થયેલ નથી.', style: TextStyle(color: Colors.grey)),
+                        ),
+                      )
+                    : ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _user.coinHistory.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final item = _user.coinHistory[index];

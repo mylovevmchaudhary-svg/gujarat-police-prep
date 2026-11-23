@@ -11,36 +11,25 @@ class UserModel {
   }
 
   bool isLoggedIn = false;
-  String name = 'વિદ્યાર્થી (Khakhi Aspirant)';
-  String email = 'student@khakhi.in';
+  String name = 'વિદ્યાર્થી';
+  String email = '';
   String myReferralCode = 'KHAKHI2026';
   String appliedReferralCode = '';
-  int coins = 150;
-  int totalReferralsCount = 3;
-  int referralCoinsEarned = 150;
+  int coins = 0;
+  int totalReferralsCount = 0;
+  int referralCoinsEarned = 0;
   bool isDailyBonusClaimed = false;
+  int testsTaken = 0;
+  int totalCorrectAnswers = 0;
+  int streakDays = 0;
 
   /// Reactive notifier for instant, real-time UI updates across all tabs & screens
   late final ValueNotifier<int> coinsNotifier = ValueNotifier<int>(coins);
 
-  final List<Map<String, dynamic>> coinHistory = [
-    {'title': 'વેલકમ બોનસ', 'amount': '+30', 'isCredit': true, 'date': 'આજે'},
-    {'title': 'રેફરલ બોનસ (મિત્ર જોડાયા)', 'amount': '+50', 'isCredit': true, 'date': 'ગઈકાલે'},
-    {'title': 'ડેઇલી ચેક-ઇન બોનસ', 'amount': '+15', 'isCredit': true, 'date': 'આજે'},
-  ];
+  final List<Map<String, dynamic>> coinHistory = [];
 
   // Withdrawal Requests list
-  final List<Map<String, dynamic>> withdrawalRequests = [
-    {
-      'id': 'wd_101',
-      'amount': '₹20.00',
-      'coins': 200,
-      'upi': 'student@upi',
-      'status': 'મંજૂર (Paid) ✅',
-      'date': 'ગઈકાલે',
-      'isSuccess': true,
-    },
-  ];
+  final List<Map<String, dynamic>> withdrawalRequests = [];
 
   // Set of unlocked test IDs
   final Set<String> _unlockedTests = {
@@ -64,13 +53,32 @@ class UserModel {
         final content = file.readAsStringSync();
         final data = jsonDecode(content);
         if (data is Map) {
+          final storedEmail = data['email']?.toString() ?? '';
+          // If stored session belonged to legacy mock dummy user, ignore it
+          if (storedEmail == 'student@khakhi.in') {
+            return;
+          }
           name = data['name']?.toString() ?? name;
-          email = data['email']?.toString() ?? email;
+          email = storedEmail;
           coins = (data['coins'] as num?)?.toInt() ?? coins;
           isLoggedIn = (data['isLoggedIn'] as bool?) ?? isLoggedIn;
           myReferralCode = data['myReferralCode']?.toString() ?? myReferralCode;
           appliedReferralCode = data['appliedReferralCode']?.toString() ?? appliedReferralCode;
           isDailyBonusClaimed = (data['isDailyBonusClaimed'] as bool?) ?? false;
+          totalReferralsCount = (data['totalReferralsCount'] as num?)?.toInt() ?? 0;
+          referralCoinsEarned = (data['referralCoinsEarned'] as num?)?.toInt() ?? 0;
+          testsTaken = (data['testsTaken'] as num?)?.toInt() ?? 0;
+          totalCorrectAnswers = (data['totalCorrectAnswers'] as num?)?.toInt() ?? 0;
+          streakDays = (data['streakDays'] as num?)?.toInt() ?? 0;
+
+          if (data['coinHistory'] is List) {
+            coinHistory.clear();
+            coinHistory.addAll(List<Map<String, dynamic>>.from(data['coinHistory']));
+          }
+          if (data['withdrawalRequests'] is List) {
+            withdrawalRequests.clear();
+            withdrawalRequests.addAll(List<Map<String, dynamic>>.from(data['withdrawalRequests']));
+          }
 
           if (data['unlockedTests'] is List) {
             _unlockedTests.addAll((data['unlockedTests'] as List).map((e) => e.toString()));
@@ -91,6 +99,13 @@ class UserModel {
         'myReferralCode': myReferralCode,
         'appliedReferralCode': appliedReferralCode,
         'isDailyBonusClaimed': isDailyBonusClaimed,
+        'totalReferralsCount': totalReferralsCount,
+        'referralCoinsEarned': referralCoinsEarned,
+        'testsTaken': testsTaken,
+        'totalCorrectAnswers': totalCorrectAnswers,
+        'streakDays': streakDays,
+        'coinHistory': coinHistory,
+        'withdrawalRequests': withdrawalRequests,
         'unlockedTests': _unlockedTests.toList(),
       };
       _storageFile.writeAsStringSync(jsonEncode(data));
@@ -210,15 +225,31 @@ class UserModel {
     return false;
   }
 
+  void recordTestCompletion({required int score, required int totalQuestions}) {
+    testsTaken++;
+    totalCorrectAnswers += score;
+    if (streakDays == 0) streakDays = 1;
+    addCoins(5, 'મોક ટેસ્ટ પૂર્ણ બોનસ');
+    _saveToDisk();
+  }
+
   void register({
     required String userName,
     required String userEmail,
     String? referralCode,
   }) {
-    name = userName;
-    email = userEmail;
+    name = userName.trim().isNotEmpty ? userName.trim() : userEmail.split('@').first;
+    email = userEmail.trim();
     isLoggedIn = true;
-    coins = 30; // base welcome
+    coins = 30; // base welcome for real registration
+    coinHistory.clear();
+    withdrawalRequests.clear();
+    coinHistory.insert(0, {
+      'title': 'નવા વિદ્યાર્થી વેલકમ બોનસ',
+      'amount': '+30',
+      'isCredit': true,
+      'date': 'આજે',
+    });
     if (referralCode != null && referralCode.trim().isNotEmpty) {
       appliedReferralCode = referralCode.trim();
       coins += 20; // referral bonus
@@ -233,9 +264,13 @@ class UserModel {
     _saveToDisk();
   }
 
-  void login({required String userEmail}) {
-    email = userEmail;
-    name = userEmail.split('@').first;
+  void login({required String userEmail, String? userName}) {
+    email = userEmail.trim();
+    if (userName != null && userName.trim().isNotEmpty) {
+      name = userName.trim();
+    } else if (name.isEmpty || name == 'વિદ્યાર્થી') {
+      name = userEmail.split('@').first;
+    }
     isLoggedIn = true;
     _saveToDisk();
   }
