@@ -98,7 +98,7 @@ class SupabaseService {
   Future<List<Question>> fetchQuestionsForTest(String testId) async {
     final result = await _restGet('questions?test_id=eq.$testId&select=*');
     if (result is List && result.isNotEmpty) {
-      return result.map((item) {
+      return result.map<Question>((item) {
         final opts = item['options'];
         List<String> optionsList = [];
         if (opts is List) {
@@ -107,10 +107,10 @@ class SupabaseService {
         return Question(
           id: item['id']?.toString() ?? '',
           subject: item['subject']?.toString() ?? 'સામાન્ય જ્ઞાન',
-          question: item['question_text']?.toString() ?? '',
+          questionText: item['question_text']?.toString() ?? '',
           options: optionsList,
           correctOptionIndex: (item['correct_option_index'] as num?)?.toInt() ?? 0,
-          explanation: item['explanation']?.toString(),
+          explanation: item['explanation']?.toString() ?? '',
         );
       }).toList();
     }

@@ -49,7 +49,7 @@ class _SyllabusScreenState extends State<SyllabusScreen> {
     for (final t in tests) {
       matchingQuestions.addAll(t.questions.where((q) =>
           q.subject.toLowerCase().contains(topic.nameGujarati.toLowerCase()) ||
-          q.question.toLowerCase().contains(topic.nameGujarati.toLowerCase())));
+          q.questionText.toLowerCase().contains(topic.nameGujarati.toLowerCase())));
     }
 
     if (matchingQuestions.isEmpty) {
