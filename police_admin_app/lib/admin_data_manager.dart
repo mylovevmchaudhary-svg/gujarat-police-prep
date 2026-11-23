@@ -140,6 +140,18 @@ class AdminDataManager {
     }
   }
 
+  void updateStudentCoins(int index, int delta) {
+    if (index >= 0 && index < students.length) {
+      students[index]['coins'] = ((students[index]['coins'] as int? ?? 0) + delta).clamp(0, 99999);
+    }
+  }
+
+  void toggleTestFree(int index) {
+    if (index >= 0 && index < tests.length) {
+      tests[index]['isFree'] = !(tests[index]['isFree'] as bool? ?? false);
+    }
+  }
+
   Future<bool> saveSocialLinks(Map<String, String> newLinks) async {
     socialLinks = Map.from(newLinks);
     await postToSupabase('app_settings', {
