@@ -40,32 +40,36 @@ class AdminDataManager {
     testQuestions['constable_1'] = [];
   }
 
-  // Generic REST GET
+  // Generic REST GET with error logging
   Future<dynamic> restGet(String endpoint) async {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 7);
+      client.connectionTimeout = const Duration(seconds: 8);
       final req = await client.getUrl(uri);
       req.headers.set('apikey', supabaseKey);
       req.headers.set('Authorization', 'Bearer $supabaseKey');
       req.headers.set('Accept', 'application/json');
 
       final res = await req.close();
+      final body = await res.transform(utf8.decoder).join();
       if (res.statusCode >= 200 && res.statusCode < 300) {
-        final body = await res.transform(utf8.decoder).join();
         return jsonDecode(body);
+      } else {
+        print('[AdminDataManager] GET $endpoint failed [Status ${res.statusCode}]: $body');
       }
-    } catch (_) {}
+    } catch (e) {
+      print('[AdminDataManager] GET error on $endpoint: $e');
+    }
     return null;
   }
 
-  // Generic REST POST
+  // Generic REST POST with error logging
   Future<bool> restPost(String endpoint, Map<String, dynamic> data) async {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 7);
+      client.connectionTimeout = const Duration(seconds: 8);
       final req = await client.postUrl(uri);
       req.headers.set('apikey', supabaseKey);
       req.headers.set('Authorization', 'Bearer $supabaseKey');
@@ -74,18 +78,24 @@ class AdminDataManager {
 
       req.write(jsonEncode(data));
       final res = await req.close();
-      return res.statusCode >= 200 && res.statusCode < 300;
-    } catch (_) {
+      final body = await res.transform(utf8.decoder).join();
+      final success = res.statusCode >= 200 && res.statusCode < 300;
+      if (!success) {
+        print('[AdminDataManager] POST $endpoint failed [Status ${res.statusCode}]: $body');
+      }
+      return success;
+    } catch (e) {
+      print('[AdminDataManager] POST error on $endpoint: $e');
       return false;
     }
   }
 
-  // Generic REST PATCH
+  // Generic REST PATCH with error logging
   Future<bool> restPatch(String endpoint, Map<String, dynamic> data) async {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 7);
+      client.connectionTimeout = const Duration(seconds: 8);
       final req = await client.patchUrl(uri);
       req.headers.set('apikey', supabaseKey);
       req.headers.set('Authorization', 'Bearer $supabaseKey');
@@ -94,29 +104,41 @@ class AdminDataManager {
 
       req.write(jsonEncode(data));
       final res = await req.close();
-      return res.statusCode >= 200 && res.statusCode < 300;
-    } catch (_) {
+      final body = await res.transform(utf8.decoder).join();
+      final success = res.statusCode >= 200 && res.statusCode < 300;
+      if (!success) {
+        print('[AdminDataManager] PATCH $endpoint failed [Status ${res.statusCode}]: $body');
+      }
+      return success;
+    } catch (e) {
+      print('[AdminDataManager] PATCH error on $endpoint: $e');
       return false;
     }
   }
 
-  // Generic REST DELETE
+  // Generic REST DELETE with error logging
   Future<bool> restDelete(String endpoint) async {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 7);
+      client.connectionTimeout = const Duration(seconds: 8);
       final req = await client.deleteUrl(uri);
       req.headers.set('apikey', supabaseKey);
       req.headers.set('Authorization', 'Bearer $supabaseKey');
       final res = await req.close();
-      return res.statusCode >= 200 && res.statusCode < 300;
-    } catch (_) {
+      final success = res.statusCode >= 200 && res.statusCode < 300;
+      if (!success) {
+        final body = await res.transform(utf8.decoder).join();
+        print('[AdminDataManager] DELETE $endpoint failed [Status ${res.statusCode}]: $body');
+      }
+      return success;
+    } catch (e) {
+      print('[AdminDataManager] DELETE error on $endpoint: $e');
       return false;
     }
   }
 
-  /// 1. Fetch Real Mock Tests from Supabase (Supports Mock Tests 1 to 100+ dynamically!)
+  /// 1. Fetch Real Mock Tests from Supabase (All 9 tests dynamically, 0 hardcoded fallback)
   Future<void> fetchRealMockTests() async {
     final result = await restGet('mock_tests?select=*,mock_test_questions(count)&order=id.asc');
     if (result is List && result.isNotEmpty) {
@@ -145,19 +167,6 @@ class AdminDataManager {
           testQuestions[testId] = [];
         }
       }
-    } else if (tests.isEmpty) {
-      // Fallback defaults if database connection is cold
-      tests.addAll([
-        {'id': 'constable_1', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ સંપૂર્ણ મોક ટેસ્ટ 01', 'isFree': true, 'totalMcqs': 200, 'duration': 180},
-        {'id': 'constable_2', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ સંપૂર્ણ મોક ટેસ્ટ 02', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
-        {'id': 'constable_3', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ સંપૂર્ણ મોક ટેસ્ટ 03', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
-        {'id': 'constable_4', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ પ્રીમિયમ મોક ટેસ્ટ 04', 'isFree': false, 'totalMcqs': 0, 'duration': 180},
-        {'id': 'constable_5', 'exam': 'કોન્સ્ટેબલ (LRD)', 'exam_id': 'constable', 'title': 'કોન્સ્ટેબલ પ્રીમિયમ મોક ટેસ્ટ 05', 'isFree': false, 'totalMcqs': 0, 'duration': 180},
-        {'id': 'psi_1', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI પ્રિલિમિનરી મોક ટેસ્ટ 01', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
-        {'id': 'psi_2', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI કાયદો & બંધારણ મોક ટેસ્ટ 02', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
-        {'id': 'psi_3', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI ભાષાકીય & વ્યાકરણ મોક ટેસ્ટ 03', 'isFree': true, 'totalMcqs': 0, 'duration': 180},
-        {'id': 'psi_4', 'exam': 'PSI / ASI', 'exam_id': 'psi', 'title': 'PSI પ્રીમિયમ સંપૂર્ણ મોક ટેસ્ટ 04', 'isFree': false, 'totalMcqs': 0, 'duration': 180},
-      ]);
     }
   }
 
@@ -280,6 +289,14 @@ class AdminDataManager {
         hasMore = false;
       }
     }
+
+    // Update totalMcqs for all tests based on loaded testQuestions
+    for (final t in tests) {
+      final tid = t['id']?.toString();
+      if (tid != null && testQuestions.containsKey(tid)) {
+        t['totalMcqs'] = testQuestions[tid]!.length;
+      }
+    }
   }
 
   void _addQuestionToTestMap(String testId, Map<String, dynamic> item) {
@@ -392,7 +409,7 @@ class AdminDataManager {
         'title': title,
         'description': description,
         'isFree': isFree,
-        'totalMcqs': totalQuestions,
+        'totalMcqs': 0,
         'duration': durationMinutes,
       });
       testQuestions[id] = [];
@@ -401,10 +418,11 @@ class AdminDataManager {
   }
 
   /// Add question and persist to Supabase `questions` and `mock_test_questions`
+  /// Verifies both inserts succeeded before displaying success (Part 6)
   Future<bool> addQuestion(String testId, Map<String, dynamic> question) async {
     final questionId = 'q_${DateTime.now().millisecondsSinceEpoch}';
 
-    // Exactly 4 options for Supabase check constraint
+    // Exactly 4 options for Supabase check constraint (questions_options_four_distinct_check)
     final optionsList = [
       question['optionA'] ?? '',
       question['optionB'] ?? '',
@@ -433,13 +451,19 @@ class AdminDataManager {
       return false;
     }
 
-    // 2. Also map into mock_test_questions
+    // 2. Insert into mock_test_questions
     final currentPos = (testQuestions[testId]?.length ?? 0) + 1;
-    await restPost('mock_test_questions', {
+    final mtqSuccess = await restPost('mock_test_questions', {
       'test_id': testId,
       'question_id': questionId,
       'position': currentPos,
     });
+
+    if (!mtqSuccess) {
+      // Rollback question if mapping fails
+      await restDelete('questions?id=eq.$questionId');
+      return false;
+    }
 
     // 3. Only add locally once confirmed from Supabase, prevent duplicate
     final qMap = Map<String, dynamic>.from(question);
@@ -468,12 +492,12 @@ class AdminDataManager {
 
       final questionId = existing['id']?.toString();
       if (questionId != null && questionId.isNotEmpty) {
+        // Exactly 4 options for Supabase check constraint
         final optionsList = [
           question['optionA'] ?? '',
           question['optionB'] ?? '',
           question['optionC'] ?? '',
           question['optionD'] ?? '',
-          question['optionE'] ?? 'પ્રયાસ કરેલ નથી',
         ];
         int correctIdx = 0;
         if (question['correct'] == 'B') correctIdx = 1;
@@ -499,6 +523,10 @@ class AdminDataManager {
       if (questionId != null && questionId.isNotEmpty) {
         restDelete('mock_test_questions?question_id=eq.$questionId');
         restDelete('questions?id=eq.$questionId');
+      }
+      final testIdx = tests.indexWhere((t) => t['id'] == testId);
+      if (testIdx >= 0) {
+        tests[testIdx]['totalMcqs'] = testQuestions[testId]?.length ?? 0;
       }
     }
   }

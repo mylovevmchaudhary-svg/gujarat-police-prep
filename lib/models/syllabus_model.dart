@@ -4,6 +4,7 @@ class SyllabusTopic {
   final String nameGujarati;
   final String? syllabusId;
   final String? paperPart;
+  final String? contentType;
   final List<String> keyPoints;
   int mcqCount;
   bool isCompleted;
@@ -14,6 +15,7 @@ class SyllabusTopic {
     required this.nameGujarati,
     this.syllabusId,
     this.paperPart,
+    this.contentType,
     required this.keyPoints,
     this.mcqCount = 0,
     this.isCompleted = false,

@@ -72,21 +72,36 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/heads/main')
         with:
-          tag_name: v3.9.0-latest
-          name: "PSI Mock Test & Admin Console v3.9.0 (Dynamic Supabase Sync - 9 Mock Tests, Real MCQ Counts, Live Profiles Auth)"
+          tag_name: v3.10.0-latest
+          name: "PSI Mock Test & Admin Console v3.10.0 (Dynamic Supabase Integration - 18 Syllabus Sections, 151 Topics, 9 Tests & Auth Sync)"
           body: |
-            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.9.0
+            ## 👮‍♂️ PSI Mock Test (Gujarat Police Constable & PSI Edition) - v3.10.0
             
             ### 📥 Download Android Applications:
-            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.9.0-latest/PSI_Mock_Test_Student_App.apk)
-            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.9.0-latest/PSI_Mock_Test_Admin_App.apk)
-            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.9.0-latest/PSI_Mock_Test_Student_App.aab)
+            - 📱 **Student Mobile App (~16MB):** [PSI_Mock_Test_Student_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.10.0-latest/PSI_Mock_Test_Student_App.apk)
+            - 🎛️ **Dedicated Admin App (~16MB):** [PSI_Mock_Test_Admin_App.apk](https://github.com/${{ github.repository }}/releases/download/v3.10.0-latest/PSI_Mock_Test_Admin_App.apk)
+            - 📦 **Play Store AAB Bundle:** [PSI_Mock_Test_Student_App.aab](https://github.com/${{ github.repository }}/releases/download/v3.10.0-latest/PSI_Mock_Test_Student_App.aab)
             
-            ### 🚀 What's Fixed in v3.9.0 (Database Connection & Data Synchronization):
-            - 📋 **All 9 Mock Tests Visible (5 Constable + 4 PSI):** All 9 tests dynamically loaded from Supabase `mock_tests`. Tests with 0 MCQs are never hidden and properly display "0 MCQs".
-            - 🔢 **Accurate Database MCQ Counts:** Computed dynamically via `mock_test_questions(count)`. Displays 200 MCQs for Constable 01 and 0 MCQs for remaining tests.
-            - 👤 **Real Supabase Auth & Profiles Synchronization:** User registration and login use official Supabase Auth UUID as `profiles.id` with upsert logic. Displays student name, email, phone (if present), UID, and registration date in the Admin Panel without dummy data.
-            - 🛠️ **Admin MCQ Management Hardening:** Verified question insertion with 4 distinct options matching database check constraints. Added confirmation checks before local state updates.
+            ### 🚀 What's Fixed in v3.10.0 (Permanent Supabase Dynamic Integration):
+            - 📚 **Full Dynamic Syllabus & Topics (18 Sections, 151 Topics):**
+              - Constable: 8 sections, 65 topics mapped via `syllabus.id = syllabus_topics.syllabus_id`.
+              - PSI / ASI: 10 sections, 86 topics mapped via `syllabus.id = syllabus_topics.syllabus_id`.
+              - Preserved `title_gujarati`, `title`, `paper_part`, and `content_type`.
+            - 🎯 **Topic-Level MCQ Counts & Practice:**
+              - Real-time question counting grouped by `topic_id`.
+              - Topic practice strictly queries `questions?topic_id=eq.$topicId`.
+              - Empty topics cleanly present informative empty states without crashing.
+            - 📋 **Mock Tests & Exact Counts (9 Tests):**
+              - All 9 mock tests (5 Constable + 4 PSI) fetched dynamically from `mock_tests`.
+              - Test 01 displays 200 MCQs; Tests 2-9 display 0 MCQs from `mock_test_questions`.
+              - Test 01 loads all 200 questions in strict position order.
+            - 👤 **Real Supabase Auth & Strict Error Handling:**
+              - Eliminated silent local login fallback and auto-registration on wrong password.
+              - Failed login attempts correctly return specific rejection messages.
+              - Profiles synchronized with Supabase Auth UUID as primary key.
+            - 🎛️ **Admin MCQ Management Hardening:**
+              - MCQs inserted with exactly 4 options matching database check constraints.
+              - Both `questions` and `mock_test_questions` inserts verified before confirming success.
             - 🎨 **Strict UI Preservation:** 100% design, colors, layout, fonts, navigation, and features preserved without alteration.
           files: |
             build/app/outputs/flutter-apk/PSI_Mock_Test_Student_App.apk

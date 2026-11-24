@@ -17,23 +17,23 @@ class SupabaseService {
 
   final UserModel _user = UserModel();
 
-  /// Generic GET request to Supabase REST endpoint
+  /// Generic GET request to Supabase REST endpoint with error logging
   Future<dynamic> _restGet(String endpoint) async {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 6);
+      client.connectionTimeout = const Duration(seconds: 8);
       final request = await client.getUrl(uri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Authorization', 'Bearer $supabaseAnonKey');
       request.headers.set('Accept', 'application/json');
 
       final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final body = await response.transform(utf8.decoder).join();
         return jsonDecode(body);
       } else {
-        debugPrint('[SupabaseService] GET error $endpoint: ${response.statusCode}');
+        debugPrint('[SupabaseService] GET $endpoint failed [Status ${response.statusCode}]: $body');
       }
     } catch (e) {
       debugPrint('[SupabaseService] GET network error on $endpoint: $e');
@@ -41,12 +41,12 @@ class SupabaseService {
     return null;
   }
 
-  /// Generic POST request to Supabase REST endpoint
+  /// Generic POST request to Supabase REST endpoint with error logging
   Future<bool> _restPost(String endpoint, Map<String, dynamic> data, {bool preferUpsert = false}) async {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 6);
+      client.connectionTimeout = const Duration(seconds: 8);
       final request = await client.postUrl(uri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Authorization', 'Bearer $supabaseAnonKey');
@@ -59,10 +59,10 @@ class SupabaseService {
 
       request.write(jsonEncode(data));
       final response = await request.close();
+      final body = await response.transform(utf8.decoder).join();
       final success = response.statusCode >= 200 && response.statusCode < 300;
       if (!success) {
-        final body = await response.transform(utf8.decoder).join();
-        debugPrint('[SupabaseService] POST $endpoint failed (${response.statusCode}): $body');
+        debugPrint('[SupabaseService] POST $endpoint failed [Status ${response.statusCode}]: $body');
       }
       return success;
     } catch (e) {
@@ -71,12 +71,12 @@ class SupabaseService {
     }
   }
 
-  /// Generic PATCH request to Supabase REST endpoint
+  /// Generic PATCH request to Supabase REST endpoint with error logging
   Future<bool> _restPatch(String endpoint, Map<String, dynamic> data) async {
     try {
       final uri = Uri.parse('$supabaseUrl/rest/v1/$endpoint');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 6);
+      client.connectionTimeout = const Duration(seconds: 8);
       final request = await client.patchUrl(uri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Authorization', 'Bearer $supabaseAnonKey');
@@ -87,7 +87,8 @@ class SupabaseService {
       final response = await request.close();
       final success = response.statusCode >= 200 && response.statusCode < 300;
       if (!success) {
-        debugPrint('[SupabaseService] PATCH $endpoint failed (${response.statusCode})');
+        final body = await response.transform(utf8.decoder).join();
+        debugPrint('[SupabaseService] PATCH $endpoint failed [Status ${response.statusCode}]: $body');
       }
       return success;
     } catch (e) {
@@ -108,19 +109,10 @@ class SupabaseService {
       initialCoins += 20; // +50 total with referral
     }
 
-    // 1. Update local user state immediately
-    _user.register(
-      userName: name,
-      userEmail: email,
-      referralCode: referralCode,
-    );
-
-    // 2. Call Supabase Auth API: POST /auth/v1/signup
-    // This creates the user in Supabase Authentication -> Users dashboard!
     try {
       final authUri = Uri.parse('$supabaseUrl/auth/v1/signup');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 8);
+      client.connectionTimeout = const Duration(seconds: 10);
       final request = await client.postUrl(authUri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Content-Type', 'application/json');
@@ -132,34 +124,50 @@ class SupabaseService {
           'name': name,
           'referral_code': referralCode ?? '',
           'my_referral_code': _user.myReferralCode,
-          'coins': _user.coins,
+          'coins': initialCoins,
         },
       };
 
       request.write(jsonEncode(authPayload));
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
-      final Map<String, dynamic> jsonResponse = jsonDecode(body);
+      final dynamic decoded = jsonDecode(body);
+      final Map<String, dynamic> jsonResponse = decoded is Map<String, dynamic> ? decoded : {};
 
-      final userId = jsonResponse['id']?.toString() ?? jsonResponse['user']?['id']?.toString();
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final userId = jsonResponse['id']?.toString() ?? jsonResponse['user']?['id']?.toString();
 
-      // 3. Upsert into public.profiles table using authenticated user's actual UUID
-      if (userId != null && userId.isNotEmpty) {
-        final profileCreated = await _restPost('profiles?on_conflict=id', {
-          'id': userId,
-          'name': name,
-          'email': email,
-          'my_referral_code': _user.myReferralCode,
-          'referred_by': referralCode,
-          'coins': _user.coins,
-        }, preferUpsert: true);
-        debugPrint('[SupabaseService] Profile created in profiles: $profileCreated (UID: $userId)');
+        if (userId != null && userId.isNotEmpty) {
+          // Upsert into public.profiles table using authenticated user's actual UUID
+          await _restPost('profiles?on_conflict=id', {
+            'id': userId,
+            'name': name,
+            'email': email,
+            'my_referral_code': _user.myReferralCode,
+            'referred_by': referralCode,
+            'coins': initialCoins,
+          }, preferUpsert: true);
+        }
+
+        _user.register(
+          userName: name,
+          userEmail: email,
+          referralCode: referralCode,
+        );
+        _user.setCoins(initialCoins);
+
+        return {'success': true, 'userId': userId};
+      } else {
+        final errorMsg = jsonResponse['msg'] ??
+            jsonResponse['error_description'] ??
+            jsonResponse['message'] ??
+            'નોંધણી નિષ્ફળ થઈ (${response.statusCode})';
+        debugPrint('[SupabaseService] SignUp error [Status ${response.statusCode}]: $errorMsg');
+        return {'success': false, 'error': errorMsg.toString()};
       }
-
-      return {'success': true, 'userId': userId};
     } catch (e) {
-      debugPrint('[SupabaseService] SignUp error: $e');
-      return {'success': true, 'offline': true};
+      debugPrint('[SupabaseService] SignUp network error: $e');
+      return {'success': false, 'error': 'નેટવર્ક કનેક્શન ક્ષતિ: $e'};
     }
   }
 
@@ -168,14 +176,10 @@ class SupabaseService {
     required String email,
     required String password,
   }) async {
-    // 1. Set local user state
-    _user.login(userEmail: email);
-
-    // 2. Call Supabase Auth API: POST /auth/v1/token?grant_type=password
     try {
       final tokenUri = Uri.parse('$supabaseUrl/auth/v1/token?grant_type=password');
       final client = HttpClient();
-      client.connectionTimeout = const Duration(seconds: 8);
+      client.connectionTimeout = const Duration(seconds: 10);
       final request = await client.postUrl(tokenUri);
       request.headers.set('apikey', supabaseAnonKey);
       request.headers.set('Content-Type', 'application/json');
@@ -187,41 +191,54 @@ class SupabaseService {
 
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
-      final Map<String, dynamic> jsonResponse = jsonDecode(body);
+      final dynamic decoded = jsonDecode(body);
+      final Map<String, dynamic> jsonResponse = decoded is Map<String, dynamic> ? decoded : {};
 
-      // If user signed in, load their live profile coins from Supabase
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final userId = jsonResponse['user']?['id']?.toString();
         final userMetadata = jsonResponse['user']?['user_metadata'];
         final userName = userMetadata?['name']?.toString() ?? email.split('@').first;
 
-        final profileData = await _restGet('profiles?email=eq.$email&select=*');
-        if (profileData is List && profileData.isNotEmpty) {
-          final p = profileData.first;
-          final remoteCoins = (p['coins'] as num?)?.toInt();
-          final remoteName = p['name']?.toString();
-          if (remoteCoins != null) _user.setCoins(remoteCoins);
-          if (remoteName != null && remoteName.isNotEmpty) _user.name = remoteName;
-        } else if (userId != null && userId.isNotEmpty) {
-          // If profile record missing in profiles table, upsert it with authenticated user's UUID
-          await _restPost('profiles?on_conflict=id', {
-            'id': userId,
-            'name': userName,
-            'email': email,
-            'my_referral_code': _user.myReferralCode,
-            'coins': _user.coins,
-          }, preferUpsert: true);
+        String nameToSet = userName;
+        int coinsToSet = 30;
+
+        if (userId != null && userId.isNotEmpty) {
+          final profileData = await _restGet('profiles?id=eq.$userId&select=*');
+          if (profileData is List && profileData.isNotEmpty) {
+            final p = profileData.first;
+            final remoteCoins = (p['coins'] as num?)?.toInt();
+            final remoteName = p['name']?.toString();
+            if (remoteCoins != null) coinsToSet = remoteCoins;
+            if (remoteName != null && remoteName.isNotEmpty) nameToSet = remoteName;
+          } else {
+            // Upsert profile record if missing
+            await _restPost('profiles?on_conflict=id', {
+              'id': userId,
+              'name': userName,
+              'email': email,
+              'my_referral_code': _user.myReferralCode,
+              'coins': coinsToSet,
+            }, preferUpsert: true);
+          }
         }
-        return {'success': true, 'data': jsonResponse};
+
+        _user.login(userEmail: email);
+        _user.name = nameToSet;
+        _user.setCoins(coinsToSet);
+
+        return {'success': true, 'userId': userId, 'data': jsonResponse};
       } else {
-        // If user not in Supabase auth yet, attempt auto-signup with the password
-        debugPrint('[SupabaseService] User not in Auth, creating user via signUp for $email');
-        await signUp(name: email.split('@').first, email: email, password: password);
-        return {'success': true, 'autoRegistered': true};
+        // STRICT: Return authentication error. No silent login and no auto-registration!
+        final errorMsg = jsonResponse['error_description'] ??
+            jsonResponse['msg'] ??
+            jsonResponse['message'] ??
+            'અમાન્ય ઈમેલ અથવા પાસવર્ડ.';
+        debugPrint('[SupabaseService] SignIn authentication rejected [Status ${response.statusCode}]: $errorMsg');
+        return {'success': false, 'error': errorMsg.toString()};
       }
     } catch (e) {
-      debugPrint('[SupabaseService] SignIn error: $e');
-      return {'success': true, 'offline': true};
+      debugPrint('[SupabaseService] SignIn network error: $e');
+      return {'success': false, 'error': 'કૃપા કરીને ઇન્ટરનેટ કનેક્શન તપાસો.'};
     }
   }
 
@@ -346,6 +363,45 @@ class SupabaseService {
       }
     }
 
+    // Fallback: If joined query returned empty, do two-step fetch
+    if (collected.isEmpty) {
+      final mtqRows = await _restGet(
+          'mock_test_questions?test_id=eq.$testId&select=question_id,position&order=position.asc&limit=1000');
+      if (mtqRows is List && mtqRows.isNotEmpty) {
+        final List<String> qIds = [];
+        final Map<String, int> posMap = {};
+        for (final r in mtqRows) {
+          if (r is Map) {
+            final qId = r['question_id']?.toString();
+            if (qId != null && qId.isNotEmpty) {
+              qIds.add(qId);
+              posMap[qId] = (r['position'] as num?)?.toInt() ?? 0;
+            }
+          }
+        }
+        if (qIds.isNotEmpty) {
+          // Chunk in batches of 50 for the in. filter
+          for (int i = 0; i < qIds.length; i += 50) {
+            final chunk = qIds.sublist(i, (i + 50 > qIds.length) ? qIds.length : i + 50);
+            final inList = chunk.join(',');
+            final qRows = await _restGet('questions?id=in.($inList)&select=*');
+            if (qRows is List && qRows.isNotEmpty) {
+              for (final row in qRows) {
+                if (row is Map) {
+                  final q = _mapToQuestion(Map<String, dynamic>.from(row));
+                  if (seenIds.add(q.id)) {
+                    collected.add(q);
+                  }
+                }
+              }
+            }
+          }
+          // Sort questions strictly by assigned position
+          collected.sort((a, b) => (posMap[a.id] ?? 0).compareTo(posMap[b.id] ?? 0));
+        }
+      }
+    }
+
     // B. Also query direct questions table where test_id = testId (if any added directly)
     offset = 0;
     hasMore = true;
@@ -414,89 +470,119 @@ class SupabaseService {
   }
 
   /// 4. Fetch DYNAMIC Syllabus & Topics directly from Supabase (ZERO hardcoded topics!)
+  /// Correctly links syllabus and syllabus_topics via syllabus_id foreign key relationship.
   Future<List<SyllabusSubject>> fetchSyllabusWithTopics({String? examId}) async {
-    String endpoint = 'syllabus?select=*,syllabus_topics(*)&order=created_at.asc';
-    if (examId != null && examId.isNotEmpty) {
-      endpoint = 'syllabus?exam_id=eq.$examId&select=*,syllabus_topics(*)&order=created_at.asc';
-    }
-
-    final dynamic result = await _restGet(endpoint);
+    // 1. Fetch live topic MCQ counts
     final counts = await fetchTopicMcqCounts();
 
-    if (result is List && result.isNotEmpty) {
-      return result.map<SyllabusSubject>((item) {
-        final List<SyllabusTopic> parsedTopics = [];
+    // 2. Fetch Syllabus sections
+    String syllabusEndpoint = 'syllabus?order=id.asc';
+    if (examId != null && examId.isNotEmpty) {
+      syllabusEndpoint = 'syllabus?exam_id=eq.$examId&order=id.asc';
+    }
+    final syllabusData = await _restGet(syllabusEndpoint);
+    if (syllabusData is! List || syllabusData.isEmpty) {
+      return [];
+    }
 
-        // Parse from joined `syllabus_topics` table
-        final rawTopics = item['syllabus_topics'];
-        if (rawTopics is List) {
-          for (final t in rawTopics) {
-            final topicId = t['id']?.toString() ?? '';
-            final gujTitle = t['title_gujarati']?.toString() ?? t['title']?.toString() ?? '';
-            final engTitle = t['title']?.toString() ?? gujTitle;
-            final count = counts[topicId] ?? counts[gujTitle] ?? 0;
+    // 3. Fetch syllabus_topics separately for 100% reliable mapping
+    String topicsEndpoint = 'syllabus_topics?order=id.asc&limit=1000';
+    final topicsData = await _restGet(topicsEndpoint);
 
-            parsedTopics.add(SyllabusTopic(
-              id: topicId,
-              name: engTitle,
-              nameGujarati: gujTitle,
-              syllabusId: t['syllabus_id']?.toString(),
-              paperPart: t['paper_part']?.toString(),
-              keyPoints: [],
-              mcqCount: count,
-            ));
+    final Map<String, List<SyllabusTopic>> topicsBySyllabusId = {};
+    if (topicsData is List) {
+      for (final t in topicsData) {
+        if (t is Map) {
+          final sylId = t['syllabus_id']?.toString() ?? '';
+          final topicId = t['id']?.toString() ?? '';
+          final gujTitle = t['title_gujarati']?.toString() ?? t['title']?.toString() ?? '';
+          final engTitle = t['title']?.toString() ?? gujTitle;
+          final count = counts[topicId] ?? 0;
+
+          final topic = SyllabusTopic(
+            id: topicId,
+            name: engTitle,
+            nameGujarati: gujTitle,
+            syllabusId: sylId,
+            paperPart: t['paper_part']?.toString(),
+            contentType: t['content_type']?.toString(),
+            keyPoints: [],
+            mcqCount: count,
+          );
+
+          topicsBySyllabusId.putIfAbsent(sylId, () => []).add(topic);
+        }
+      }
+    }
+
+    final List<SyllabusSubject> subjects = [];
+    for (final item in syllabusData) {
+      if (item is Map) {
+        final subjectId = item['id']?.toString() ?? '';
+        final subjectGujarati = item['title_gujarati']?.toString() ?? item['title']?.toString() ?? '';
+        final subjectEnglish = item['title']?.toString() ?? subjectGujarati;
+        final exId = item['exam_id']?.toString() ?? 'constable';
+
+        // Retrieve mapped topics
+        final List<SyllabusTopic> sectionTopics = topicsBySyllabusId[subjectId] ?? [];
+
+        // If topicsData was not available separately, check embedded join
+        if (sectionTopics.isEmpty && item['syllabus_topics'] is List) {
+          for (final t in (item['syllabus_topics'] as List)) {
+            if (t is Map) {
+              final topicId = t['id']?.toString() ?? '';
+              final gujTitle = t['title_gujarati']?.toString() ?? t['title']?.toString() ?? '';
+              final engTitle = t['title']?.toString() ?? gujTitle;
+              final count = counts[topicId] ?? 0;
+              sectionTopics.add(SyllabusTopic(
+                id: topicId,
+                name: engTitle,
+                nameGujarati: gujTitle,
+                syllabusId: subjectId,
+                paperPart: t['paper_part']?.toString(),
+                contentType: t['content_type']?.toString(),
+                keyPoints: [],
+                mcqCount: count,
+              ));
+            }
           }
         }
 
-        final subjectGujarati = item['title_gujarati']?.toString() ?? item['title']?.toString() ?? '';
-        final subjectId = item['id']?.toString() ?? '';
-        final totalSubjMcqs = counts[subjectId] ?? counts[subjectGujarati] ?? 0;
+        // Calculate dynamic section MCQ total from topics
+        int totalSubjMcqs = 0;
+        for (final st in sectionTopics) {
+          totalSubjMcqs += st.mcqCount;
+        }
 
-        return SyllabusSubject(
+        subjects.add(SyllabusSubject(
           id: subjectId,
-          title: item['title']?.toString() ?? '',
+          title: subjectEnglish,
           titleGujarati: subjectGujarati,
           iconName: item['icon_name']?.toString() ?? 'menu_book',
           totalMarksWeightage: (item['total_marks_weightage'] as num?)?.toInt() ?? 10,
-          examId: item['exam_id']?.toString() ?? 'constable',
+          examId: exId,
           dynamicMcqCount: totalSubjMcqs,
-          topics: parsedTopics,
-        );
-      }).toList();
+          topics: sectionTopics,
+        ));
+      }
     }
-    return [];
+
+    return subjects;
   }
 
-  /// 5. Fetch MCQs specifically belonging to a Syllabus Topic for interactive practice
-  Future<List<Question>> fetchQuestionsForTopic(String topicId, String subjectGujarati) async {
+  /// 5. Fetch MCQs specifically belonging to a Syllabus Topic by `topic_id`
+  /// Strictly queries by `topic_id` (Part 3)
+  Future<List<Question>> fetchQuestionsForTopic(String topicId, [String? subjectGujarati]) async {
     final List<Question> questions = [];
-    final Set<String> seenIds = {};
-
-    // Match by topic_id or matching subject text
-    final endpoint = 'questions?topic_id=eq.$topicId&select=*&limit=500';
+    final endpoint = 'questions?topic_id=eq.$topicId&select=*&order=id.asc&limit=1000';
     final result = await _restGet(endpoint);
     if (result is List && result.isNotEmpty) {
       for (final item in result) {
-        final q = _mapToQuestion(Map<String, dynamic>.from(item));
-        if (seenIds.add(q.id)) {
-          questions.add(q);
+        if (item is Map) {
+          questions.add(_mapToQuestion(Map<String, dynamic>.from(item)));
         }
       }
     }
-
-    if (questions.isEmpty && subjectGujarati.isNotEmpty) {
-      final fallbackEndpoint = 'questions?subject=ilike.%$subjectGujarati%&select=*&limit=500';
-      final fbResult = await _restGet(fallbackEndpoint);
-      if (fbResult is List && fbResult.isNotEmpty) {
-        for (final item in fbResult) {
-          final q = _mapToQuestion(Map<String, dynamic>.from(item));
-          if (seenIds.add(q.id)) {
-            questions.add(q);
-          }
-        }
-      }
-    }
-
     return questions;
   }
 
@@ -530,7 +616,6 @@ class SupabaseService {
     if (result is List && result.isNotEmpty) {
       return List<Map<String, dynamic>>.from(result);
     }
-    // Return empty list if no notifications added in database yet!
     return [];
   }
 

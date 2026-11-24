@@ -37,14 +37,20 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     // Real Supabase Auth & Cloud Database Login
-    await SupabaseService().signIn(email: email, password: password);
+    final result = await SupabaseService().signIn(email: email, password: password);
 
     if (mounted) {
       setState(() => _isLoading = false);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-      );
+      if (result['success'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+        );
+      } else {
+        setState(() {
+          _errorMessage = result['error']?.toString() ?? 'અમાન્ય ઈમેલ અથવા પાસવર્ડ.';
+        });
+      }
     }
   }
 

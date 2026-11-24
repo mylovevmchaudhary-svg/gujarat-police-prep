@@ -44,7 +44,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
 
     // Real Supabase Cloud Auth & Profiles registration
-    await SupabaseService().signUp(
+    final result = await SupabaseService().signUp(
       name: name,
       email: email,
       password: password,
@@ -54,22 +54,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (mounted) {
       setState(() => _isLoading = false);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: const Color(0xFF2E7D32),
-          content: Text(
-            refCode.isNotEmpty
-              ? 'ખાતું બની ગયું! રેફરલ બોનસ સાથે +50 કોઈન્સ મળ્યા! 🎉'
-              : 'ખાતું સફળતાપૂર્વક બની ગયું! વેલકમ બોનસ +30 કોઈન્સ મળ્યા! 🎉',
+      if (result['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF2E7D32),
+            content: Text(
+              refCode.isNotEmpty
+                ? 'ખાતું બની ગયું! રેફરલ બોનસ સાથે +50 કોઈન્સ મળ્યા! 🎉'
+                : 'ખાતું સફળતાપૂર્વક બની ગયું! વેલકમ બોનસ +30 કોઈન્સ મળ્યા! 🎉',
+            ),
           ),
-        ),
-      );
+        );
 
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-        (route) => false,
-      );
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
+          (route) => false,
+        );
+      } else {
+        setState(() {
+          _errorMessage = result['error']?.toString() ?? 'નોંધણી નિષ્ફળ થઈ. ફરી પ્રયાસ કરો.';
+        });
+      }
     }
   }
 
